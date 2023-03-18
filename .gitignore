@@ -1,0 +1,3 @@
+/simu/*.js
+/simu/*.wasm
+/simu/node_modules

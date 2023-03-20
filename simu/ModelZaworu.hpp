@@ -15,7 +15,7 @@ struct ModelZaworu {
     void step(double time) {
         if (Ron > 0.0) {
             Zdir = Rplus > 0.0 ? +1.0 : -1.0;
-            Z += Zdir * time * OpenTime;
+            Z += Zdir * time / OpenTime;
             if (Z < 0.0) Z = 0.0;
             if (Z > 1.0) Z = 1.0;
         } else {

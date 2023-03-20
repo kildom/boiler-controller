@@ -27,11 +27,11 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="true"
-     inkscape:zoom="9.4431753"
-     inkscape:cx="1023.5964"
-     inkscape:cy="150.58494"
-     inkscape:window-width="1280"
-     inkscape:window-height="987"
+     inkscape:zoom="2.3607938"
+     inkscape:cx="192.94357"
+     inkscape:cy="-53.160085"
+     inkscape:window-width="1920"
+     inkscape:window-height="1098"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -1075,5 +1075,23 @@
              style="font-weight:bold;stroke-width:2;stroke-dasharray:none">+</tspan></text>
       </g>
     </g>
+    <rect
+       style="fill:#c6d3df;fill-opacity:1;stroke:#323232;stroke-width:0.999996;stroke-dasharray:none;stroke-opacity:1;stop-color:#000000"
+       id="rect599"
+       width="230"
+       height="40"
+       x="10"
+       y="10" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:24px;line-height:normal;font-family:sans-serif;font-variant-ligatures:normal;font-variant-position:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-alternates:normal;font-variant-east-asian:normal;font-feature-settings:normal;font-variation-settings:normal;text-indent:0;text-align:start;text-decoration-line:none;text-decoration-style:solid;text-decoration-color:#000000;letter-spacing:normal;word-spacing:normal;text-transform:none;writing-mode:lr-tb;direction:ltr;text-orientation:mixed;dominant-baseline:auto;baseline-shift:baseline;white-space:normal;opacity:1;vector-effect:none;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.8;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000;stop-opacity:1"
+       x="17.644531"
+       y="40"
+       id="text1343"><tspan
+         sodipodi:role="line"
+         id="tspan1341"
+         x="17.644531"
+         y="40"
+         style="font-size:24px;fill:#000000;fill-opacity:1;stroke:none;stroke-opacity:1">Czas</tspan></text>
   </g>
 </svg>

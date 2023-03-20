@@ -8,6 +8,8 @@ OPT="/home/doki/my/binaryen-version_112/bin/wasm-opt"
 
 CLANG_FLAGS="-O3 -g -mexec-model=reactor"
 OPT_FLAGS="-O4"
+CLANG_FLAGS="-O0 -g -gdwarf-5 -gpubnames -mexec-model=reactor"
+OPT_FLAGS=""
 
 function lock-file {
     TMP_NAME=`mktemp -u`
@@ -52,7 +54,8 @@ reset
 
 echo Building C/C++ sources
 
-$CLANG $CLANG_FLAGS main.cpp -o model-unopt.wasm
-$OPT $OPT_FLAGS model-unopt.wasm -o model.wasm
+$CLANG $CLANG_FLAGS main.cpp -o model.wasm
+#$OPT $OPT_FLAGS model-unopt.wasm -o model.wasm
+#cp model-unopt.wasm model.wasm
 
 echo Done

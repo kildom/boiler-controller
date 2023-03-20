@@ -29,12 +29,12 @@ struct ModelZasobnika {
             double expMAp = exp(-Ap);
             Tout = T - expMAp * (T - Tin);
             T += time * K * (Tin - Tout) / Ap;
-            T -= time * Twdelta;
-            if (T < Twmin) {
-                T = Twmin;
-            }
         } else {
             Tout = T;
+        }
+        T -= time * Twdelta;
+        if (T < Twmin) {
+            T = Twmin;
         }
     }
 

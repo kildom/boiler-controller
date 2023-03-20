@@ -21,10 +21,10 @@ State* getState() {
 
 
 WASM_EXPORT(steps)
-void steps(int count, double stepTime)
+void steps(int count, double maxStepTime)
 {
     for (int i = 0; i < count; i++) {
-        state.step(stepTime);
+        state.step(maxStepTime);
     }
 }
 

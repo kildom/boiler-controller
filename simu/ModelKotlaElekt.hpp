@@ -64,7 +64,7 @@ struct ModelKotlaElekt {
                 }
             }
             Rpom = true;
-            if (Ron) setState(STOPPING);
+            if (!Ron) setState(STOPPING);
             break;
         default:
             break;

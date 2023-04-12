@@ -32,6 +32,7 @@ void buzzer(bool state);
 
 // LOW LEVEL ==> UPPER LEVELS
 
+void startup_event(); // main() function is in lower level
 void button_event(int index, bool state); // upper level will count time for long press
 void timeout_event();
 void comm_event(uint8_t* data, int size); // just raw data, SLIP decoding/validating/synch in upper level

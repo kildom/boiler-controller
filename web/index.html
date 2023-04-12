@@ -1,0 +1,397 @@
+<html>
+
+<head>
+    <meta name="viewport" content="width=640, initial-scale=1">
+    <link rel="stylesheet" href="swiper-bundle.min.css" />
+
+    <script src="swiper-bundle.min.js"></script>
+
+    <script>
+
+        function openFullScreen() {
+            if (window.fullScreen || (window.innerWidth == screen.width && window.innerHeight == screen.height)) {
+                // Do normal click
+            } else {
+                let elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { /* Safari */
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) { /* IE11 */
+                    elem.msRequestFullscreen();
+                }
+            }
+        }
+
+        function initSwipe() {
+            const swiper = new Swiper('.swiper', {
+                direction: 'horizontal',
+                loop: true,
+                pagination: {
+                    el: '.swiper-pagination',
+                },
+            });
+
+        }
+
+        window.onload = function () {
+            initSwipe();
+        }
+
+    </script>
+    <style>
+        :root {
+            --swiper-pagination-bullet-inactive-color: #FFF;
+            --swiper-pagination-bullet-inactive-opacity: 0.3;
+        }
+
+        body {
+            overflow: hidden;
+            font-family: sans-serif;
+            color: white;
+            background-color: #000000;
+        }
+
+        body,
+        table {
+            font-size: 20px;
+        }
+
+        h1 {
+            background-color: #F6B80D;
+            margin: 4px 0px;
+            padding: 4px 20px;
+            color: #000000;
+            font-size: 30px;
+        }
+
+        div,
+        body {
+            margin: 0px;
+            padding: 0px;
+        }
+
+        .swiper {
+            width: 640px;
+            height: 330px;
+            margin: 0px 0px;
+        }
+
+        .swiper-slide {
+            background-image: url('bg.avif');
+            background-size: cover;
+        }
+
+        table.params {
+            border-spacing: 0px 5px;
+        }
+
+        table.params td {
+            background-color: #184f989f;
+            margin: 3px;
+            padding: 7px 10px;
+        }
+
+        table.params td.edit {
+            background-color: #F6B80D9f;
+            margin: 3px;
+            padding: 6px 30px;
+            cursor: pointer;
+            color: black;
+        }
+
+        .less {
+            font-size: 70%;
+            opacity: 70%;
+        }
+
+        .edit-h1 {
+            display: block;
+            font-weight: normal;
+            float: right;
+            background-color: #00000021;
+            padding: 0px 35px;
+            cursor: pointer;
+        }
+
+        table.params {
+            width: 100%;
+        }
+
+        table.params td {
+            white-space: nowrap;
+        }
+
+        table.params td:nth-child(1) {}
+
+        table.params td:nth-child(2) {
+            width: 100%;
+        }
+
+        table.params td:nth-child(3) {}
+
+        table.keyboard {
+            margin: 0px auto;
+            width: 178px;
+            border-spacing: 4px;
+        }
+
+        table.keyboard td {
+            background-color: #113769;
+            padding: 4px 0px;
+            text-align: center;
+            cursor: pointer;
+        }
+        em::before {
+            content: '';
+            width: 0.9em;
+            height: 0.9em;
+            display: inline-block;
+            vertical-align: -0.1em;
+            background-size: cover;
+        }
+        em::after {
+            content: ' ';
+        }
+        em.red::before {
+            background-image: url('data:image/svg+xml;charset=utf-8,<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><circle fill="red" cx="50%" cy="50%" r="50%" /><circle cx="50%" cy="50%" r="37%" stroke="rgba(255,255,255,0.5)" stroke-width="18%" stroke-dashoffset="-130%" stroke-dasharray="30% 410%" stroke-linecap="round" fill="none"/></svg>');
+        }
+        em.blue::before {
+            background-image: url('data:image/svg+xml;charset=utf-8,<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><circle fill="darkblue" cx="50%" cy="50%" r="50%" /><circle cx="50%" cy="50%" r="37%" stroke="rgba(255,255,255,0.5)" stroke-width="18%" stroke-dashoffset="-130%" stroke-dasharray="30% 410%" stroke-linecap="round" fill="none"/></svg>');
+        }
+        em.green::before {
+            background-image: url('data:image/svg+xml;charset=utf-8,<svg width="16" height="16" xmlns="http://www.w3.org/2000/svg"><circle fill="rgb(0, 180, 0)" cx="50%" cy="50%" r="50%" /><circle cx="50%" cy="50%" r="37%" stroke="rgba(255,255,255,0.5)" stroke-width="18%" stroke-dashoffset="-130%" stroke-dasharray="30% 410%" stroke-linecap="round" fill="none"/></svg>');
+        }
+    </style>
+
+</head>
+
+<body>
+    <!-- 640x360 -->
+
+    <div style="display: none">
+        <div
+            style="width: 300px; background-color: #F6B80D; position: absolute; top: 20px; left: 240px; z-index: 1000; box-shadow: 1px 1px 3px 3px #00000075; border: 1px solid #f7db8f;">
+            <div style="color: #000000; padding: 10px;">Kocioł elektryczny<br>Podł. bez zaworu</div>
+            <div
+                style="margin: 10px; padding: 20px; font-size: 50px; background-color: #113769; text-align: center; cursor: pointer;">
+                <em class="green"></em> Zał.</div>
+            <div
+                style="margin: 10px; padding: 20px; font-size: 50px; background-color: #113769; text-align: center; cursor: pointer;">
+                <em class="blue"></em> Wył.</div>
+        </div>
+        <div style="width: 640px; height: 360px; background-color: #000000b0; position: absolute; z-index: 500;"
+            onclick="this.parentElement.style.display='none';">
+        </div>
+    </div>
+
+    <div style="cdisplay: none">
+        <div
+            style="width: 260px; background-color: #F6B80D; position: absolute; top: 20px; left: 300px; z-index: 1000; box-shadow: 1px 1px 3px 3px #00000075; border: 1px solid #f7db8f;">
+            <div style="float: right">
+                <div style="height: 320px; width: 70px; overflow-x: hidden; overflow-y: scroll;">
+                    <div style="width: 60px; background-color: #113769; background-image: url('ruller2.svg');">
+                        <script>
+                            for (let i = 0; i < 85; i++) {
+                                document.write(`<div><div style="height: 80px; padding-bottom: 4px; padding-left: 27px; display: table-cell; vertical-align: middle;">${15 + i}</div></div>`);
+                            }
+                        </script>
+                    </div>
+                </div>
+            </div>
+            <div style="color: #000000; padding: 10px;">Kocioł elektryczny<br>Podł. bez zaworu</div>
+            <div
+                style="width: 130px; margin: 10px; padding: 10px 20px; font-size: 38px; background-color: #113769; text-align: center; cursor: pointer;">
+                28.4°C</div>
+            <div
+                style="width: 130px; margin: 10px; padding: 10px 20px; font-size: 38px; background-color: #34751a; text-align: center; cursor: pointer;">
+                OK</div>
+            <div
+                style="width: 130px; margin: 10px; padding: 10px 20px; font-size: 38px; background-color: #751a1a; text-align: center; cursor: pointer;">
+                Anuluj</div>
+            <!--table class="keyboard">
+                <tr><td width="33%">1</td><td width="34%">2</td><td width="33%">3</td></tr>
+                <tr><td>4</td><td>5</td><td>6</td></tr>
+                <tr><td>7</td><td>8</td><td>9</td></tr>
+                <tr><td>.</td><td>0</td><td style="background-color: #751a1a">←</td></tr>
+            </table-->
+        </div>
+        <div
+            style="width: 260px; background-color: #F6B80D; position: absolute; top: 20px; left: 20px; z-index: 1000; box-shadow: 1px 1px 3px 3px #00000075; border: 1px solid #f7db8f;">
+            <div style="color: #000000; padding: 10px;">Kocioł elektryczny<br>Podł. bez zaworu</div>
+            <div
+                style="margin: 10px; padding: 20px; font-size: 50px; background-color: #113769; text-align: center; cursor: pointer;">
+                <em class="green"></em> Zał.</div>
+            <div
+                style="margin: 10px; padding: 20px; font-size: 50px; background-color: #113769; text-align: center; cursor: pointer;">
+                <em class="blue"></em> Wył.</div>
+        </div>
+        <div style="width: 640px; height: 360px; background-color: #000000b0; position: absolute; z-index: 500;"
+            onclick="this.parentElement.style.display='none';">
+        </div>
+    </div>
+
+    <!-- Slider main container -->
+    <div style="zfilter: blur(3px);">
+        <div class="swiper">
+            <!-- Additional required wrapper -->
+            <div class="swiper-wrapper">
+                <!-- Slides -->
+                <div class="swiper-slide">
+
+                    <h1 onclick="openFullScreen()">Tryby pracy</h1>
+
+                    <table class="params">
+                        <tr>
+                            <td>Włącznik główny</td>
+                            <td><em class="green"></em> Zał.</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Kocioł na pellet</td>
+                            <td><em class="green"></em> Zał. C.O.</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td><em class="green"></em> Zał. C.W.U.</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Kocioł elektryczny</td>
+                            <td><em class="green"></em> Zał. C.O.</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td><em class="blue"></em> Wył. C.W.U.</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td><em class="blue"></em> Podł. bez zaworu</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                    </table>
+
+                </div>
+                <div class="swiper-slide">
+
+                    <h1>Kocioł na pellet<div class="edit-h1">✎</div>
+                    </h1>
+
+                    <table class="params">
+                        <tr>
+                            <td>Stan</td>
+                            <td><em class="green"></em> Zał. <span class="less">(czas 2:12:54)</span></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Temp. wyjścia</td>
+                            <td><em class="temp"></em> 65.3°C <span class="less">(kryt. 85°C)</span></td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Temp. powrotu</td>
+                            <td><em class="temp"></em> 55.2°C <span class="less">(min. 55±1.5°C)</span></td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Pomp./zaw. powrotu</td>
+                            <td><em class="blue"></em> Wył. &nbsp; ▲ 80%</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Podajnik pelletu</td>
+                            <td><em class="green"></em> Zał.</td>
+                            <td></td>
+                        </tr>
+                    </table>
+
+                </div>
+                <div class="swiper-slide">
+
+                    <h1>Kocioł elektryczny<div class="edit-h1">✎</div>
+                    </h1>
+
+                    <table class="params">
+                        <tr>
+                            <td>Stan</td>
+                            <td><em class="green"></em> Zał. <span class="less">(czas 0:52:08)</span></td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Temp. wyjścia</td>
+                            <td><em class="temp"></em> 28.3°C <span class="less">(kryt. 85°C)</span></td>
+                            <td class="edit">✎</td>
+                        </tr>
+                    </table>
+
+                </div>
+                <div class="swiper-slide">
+                    <h1>C.W.U.</h1>
+                    <table class="params">
+                        <tr>
+                            <td>Temperatura</td>
+                            <td><em class="temp"></em> 48.3°C</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Temp. zadana</td>
+                            <td><em class="temp"></em> 45°C ÷ 55°C</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Pompa</td>
+                            <td><em class="blue"></em> Wył.</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Stan</td>
+                            <td><em class="green"></em> Nagrzany</td>
+                            <td></td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="swiper-slide">
+                    <h1>C.O.<div class="edit-h1">✎</div>
+                    </h1>
+                    <table class="params">
+                        <tr>
+                            <td>Temp. pomieszczeń</td>
+                            <td><em class="green"></em> Nagrzane</td>
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td>Podłogówka 1</td>
+                            <td><em class="temp"></em> 28.3°C <span class="less">(zad. 35°C)</span></td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td><em class="blue"></em> Wył. &nbsp; ▲ 43%</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td>Podłogówka 2</td>
+                            <td><em class="temp"></em> 28.9°C <span class="less">(zad. 34°C)</span></td>
+                            <td class="edit">✎</td>
+                        </tr>
+                        <tr>
+                            <td></td>
+                            <td><em class="green"></em> Zał. &nbsp; ▲ 33%</td>
+                            <td class="edit">✎</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <!-- If we need pagination -->
+            <div class="swiper-pagination"></div>
+        </div>
+        <div
+            style="width: calc(640px - 30px); height: calc(30px - 12px); padding: 6px 15px; background-color: #113769; margin: 0px 0px; font-size: 80%; overflow: hidden;">
+            Kocioł ekektryczny - zatrzymywanie C.O.</div>
+    </div>
+</body>
+
+</html>

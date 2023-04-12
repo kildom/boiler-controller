@@ -7,7 +7,7 @@
 // UPPER LEVELS ==> LOW LEVEL
 
 // IO
-void output(int index, bool state); // Relays
+void output(int index, bool state); // Relays and buzzer
 bool input(int index); // Only state input, no buttons
 
 // Time
@@ -26,9 +26,6 @@ void rgb_update(); // send rgb_color to LEDs
 int comm_free(); // Free space in communication FIFO
 void comm_append(uint8_t* data, int size); // Append data to FIFO
 void comm_send(); // Send appended data, just raw data, SLIP encoding in upper level
-
-// Sound
-void buzzer(bool state);
 
 // LOW LEVEL ==> UPPER LEVELS
 

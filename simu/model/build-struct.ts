@@ -1,17 +1,9 @@
 import { readFileSync, writeFileSync } from "fs";
 import * as path from "path";
+import { StateStruct } from "../scripts/common";
+
 
 const DIR = path.dirname(process.argv[1]);
-
-type StateStruct = {
-    [group: string]: {
-        type: 'double' | 'bool',
-        name: string,
-        method: 'calc' | 'mod' | 'param' | 'out' | 'in',
-        comment: string,
-        offset: number
-    }[]
-};
 
 let stateStruct: StateStruct = {};
 
@@ -57,7 +49,9 @@ function cTypeToTsType(type: 'bool' | 'double') {
 
 export function buildStruct() {
     getStateStruct();
-    let out = '\nexport interface State {\n\n';
+    let out = '';
+    out += 'import { StateStruct, StateType } from \'./common\';\n\n';
+    out += 'export interface State {\n\n';
     for (let group in stateStruct) {
         out += `    // ${group}\n`;
         for (let field of stateStruct[group]) {
@@ -67,7 +61,7 @@ export function buildStruct() {
         out += '\n';
     }
     out += '};\n\n';
-    out += 'export function get(view: DataView): State {\n';
+    out += 'export function get(view: DataView): StateType {\n';
     out += '    return {\n';
     for (let group in stateStruct) {
         for (let field of stateStruct[group]) {
@@ -83,7 +77,35 @@ export function buildStruct() {
     }
     out += '    };\n';
     out += '};\n\n';
-    writeFileSync(path.join(DIR, '..', 'scripts', 'struct.ts'), out);
+    out += 'export function set(view: DataView, name: string, value: number | boolean): void {\n';
+    out += '    switch (name) {\n';
+    for (let group in stateStruct) {
+        for (let field of stateStruct[group]) {
+            out += `        case '${field.name}':\n`;
+            switch (field.type) {
+                case 'bool':
+                    out += `             view.setInt8(${field.offset}, value ? 1 : 0);\n`;
+                    break;
+                case 'double':
+                    out += `             view.setFloat64(${field.offset}, 1 * (value as any), true);\n`;
+                    break;
+            }
+            out += `             break;\n`;
+        }
+    }
+    out += `        default:\n`;
+    out += `             throw new Error('Invalid field: ' + name);\n`;
+    out += '    };\n';
+    out += '};\n\n';
+    out += `export const stateStruct: StateStruct = ${JSON.stringify(stateStruct, null, '    ')};\n\n`;
+    let fileName = path.join(DIR, '..', 'scripts', 'struct.ts');
+    let old = '';
+    try {
+        old = readFileSync(fileName, 'utf-8');
+    } catch (e) { }
+    if (old != out) {
+        writeFileSync(fileName, out);
+    }
 }
 
 buildStruct();

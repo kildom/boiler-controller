@@ -1,3 +1,5 @@
 /simu/*.js
 /simu/*.wasm
 /simu/node_modules
+/simu/model/obj
+/simu/scripts/struct.ts

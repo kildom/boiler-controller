@@ -5,16 +5,20 @@
   "description": "",
   "main": "vis.js",
   "scripts": {
-    "run": "node scripts/run.mjs"
+    "ts-watch": "npx tsc --watch --preserveWatchOutput --project tsconfig.json",
+    "cpp-watch": "npx ts-node model/watch.ts",
+    "server": "npx http-server web -a 127.0.0.1 -p 9592",
+    "run": "concurrently -c blue,magenta,red npm:ts-watch npm:cpp-watch npm:server"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^20.3.2",
+    "@types/node": "^20.4.8",
     "esbuild": "^0.18.10",
     "http-server": "^14.1.1",
     "open": "^9.1.0",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.2"
+    "typescript": "^5.0.2",
+    "concurrently": "^8.2.0"
   }
 }

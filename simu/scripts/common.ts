@@ -36,10 +36,15 @@ export type StateStruct = {
     }[]
 };
 
-export type StateType = { [name: string]: (number | boolean) };
+export type StateType = { [name: string]: number | boolean };
 
 export interface RunParameters {
     period: number,
     maxStepSize: number,
     speed: number,
 };
+
+export class StateBase {
+    constructor(public view: DataView) { }
+    update(offset: number, size: number) { }
+}

@@ -80,6 +80,7 @@ void dither_to_15(uint8_t *input, uint16_t *output, int width, int height)
 
 void dither_to_16(uint8_t *input, uint16_t *output, int width, int height)
 {
+    // uint32_t seed = 0x283423;
     uint8_t *image_end = input + 4 * width * height;
     uint8_t *noise_ptr = noise;
     uint8_t *noise_end = noise_ptr + NOISE_SIZE - 3;
@@ -88,6 +89,9 @@ void dither_to_16(uint8_t *input, uint16_t *output, int width, int height)
         while (input < line_end) {
             uint32_t red = input[2];
             red = (DITHER_TO_5_BITS_MUL * red + ((uint32_t)(*noise_ptr++) << 18)) >> 26;
+            // TODO: or calculate noise on the fly
+            //noise = (seed * 61 + 12345) & 0x3FFFFFF;
+            //red = (DITHER_TO_5_BITS_MUL * red + noise) >> 26;
             uint32_t green = input[1];
             green = (DITHER_TO_6_BITS_MUL * green + ((uint32_t)(*noise_ptr++) << 18)) >> 26;
             uint32_t blue = input[0];

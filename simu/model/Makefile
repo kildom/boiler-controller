@@ -2,14 +2,14 @@
 CLANG_HOME = /home/doki/my/ZeroTierOne-1.10.4/tools/wasi-sdk-19.0
 
 TARGET = ../web/model.wasm
-#BUILD_TYPE := debug
-BUILD_TYPE := release
+BUILD_TYPE := debug
+#BUILD_TYPE := release
 
 OBJ_DIR := obj
 
-ALLFLAGS :=
+ALLFLAGS := -fno-exceptions
 
-CFLAGS :=
+CFLAGS := -I../../lowlevel -I../../firmware
 
 LDFLAGS := -mexec-model=reactor
 
@@ -22,8 +22,11 @@ else
 endif
 
 CC=$(CLANG_HOME)/bin/clang --sysroot $(CLANG_HOME)/share/wasi-sysroot
+CXX=$(CLANG_HOME)/bin/clang++ --sysroot $(CLANG_HOME)/share/wasi-sysroot
 
 OBJ := $(patsubst ../../simu/model/%.cpp,$(OBJ_DIR)/simu/model/%.cpp.o,$(wildcard ../../simu/model/*.cpp))
+#OBJ += $(patsubst ../../firmware/%.c,$(OBJ_DIR)/firmware/%.c.o,$(wildcard ../../firmware/*.c))
+OBJ += $(patsubst ../../firmware/%.cc,$(OBJ_DIR)/firmware/%.cc.o,$(wildcard ../../firmware/*.cc))
 
 all: $(TARGET)
 
@@ -33,11 +36,18 @@ clean:
 
 $(TARGET): $(OBJ) Makefile
 	mkdir -p $(dir $@)
-	$(CC) $(LDFLAGS) $(ALLFLAGS) $(OBJ) -o $@
+	$(CXX) $(LDFLAGS) $(ALLFLAGS) $(OBJ) -o $@
 	npx ts-node build-struct.ts
 
-
 $(OBJ_DIR)/%.cpp.o: ../../%.cpp Makefile
+	mkdir -p $(dir $@)
+	$(CXX) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
+
+$(OBJ_DIR)/%.cc.o: ../../%.cc Makefile
+	mkdir -p $(dir $@)
+	$(CXX) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
+
+$(OBJ_DIR)/%.c.o: ../../%.c Makefile
 	mkdir -p $(dir $@)
 	$(CC) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 

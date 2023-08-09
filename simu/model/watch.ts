@@ -28,11 +28,11 @@ function getDeps(): Set<string> {
     return watchFiles;
 }
 
-function build() {
+function build(clean: boolean = false) {
     let status = 0;
 
     try {
-        child_process.execFileSync('make', [], { cwd: DIR, stdio: 'inherit' });
+        child_process.execFileSync('make', clean ? ['clean'] : [], { cwd: DIR, stdio: 'inherit' });
     } catch (e: any) {
         if ('status' in e && 'signal' in e) {
             status = e.status || 999;
@@ -43,6 +43,8 @@ function build() {
 
     if (status != 0) {
         console.error(`Compilation failed with status ${status}.`);
+    } else {
+        console.log(`Compilation success.`);
     }
 }
 
@@ -72,6 +74,7 @@ function clearScreen() {
 
 async function main() {
     let watchers = new Map<string, fs.FSWatcher>();
+    build(true);
     while (true) {
         if (filesQueued.size == 0 && watchers.size > 0) {
             await new Promise<void>(resolve => { fileEventResolve = resolve });
@@ -90,8 +93,12 @@ async function main() {
         let newDeps = getDeps();
         let oldDeps = new Set(watchers.keys());
         for (let dep of [...newDeps].filter(x => !oldDeps.has(x))) {
-            watchers.set(dep, fs.watch(dep, () => fileEvent(dep)));
-            console.log(`Start watching ${dep}`);
+            try {
+                watchers.set(dep, fs.watch(dep, () => fileEvent(dep)));
+                console.log(`Start watching ${dep}`);
+            } catch (e) {
+                console.log(`Watching failed ${dep}:`, e);
+            }
         }
         for (let dep of [...oldDeps].filter(x => !newDeps.has(x))) {
             watchers.get(dep)!.close();

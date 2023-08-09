@@ -8,15 +8,15 @@
 
 // IO
 void output(int index, bool state); // Relays and buzzer
-uin32_t analog_input(int index); // Raw value of analog input, converting and validating is done by upper level
+uint32_t analog_input(int index); // Raw value of analog input, converting and validating is done by upper level
 
 // Time
-uint32_t time(); // Absolute from startup, upper level is responsible for converting to 64-bits and overflow handling
+uint32_t get_time(); // Absolute from startup, upper level is responsible for converting to 64-bits and overflow handling
 void timeout(uint32_t t); // Absolute time, just one timeout at a time (upper level is responsible for timeout queue)
 
 // Persistent data
 void store_read(uint8_t* buffer, int size);
-void store_write(uint8_t* buffer, int size);
+void store_write(const uint8_t* buffer, int size);
 
 // RGB LEDs
 extern uint32_t rgb_color[RGB_LED_COUNT];
@@ -24,8 +24,14 @@ void rgb_update(); // send rgb_color to LEDs
 
 // Communication
 int comm_free(); // Free space in communication FIFO
-void comm_append(uint8_t* data, int size); // Append data to FIFO
+void comm_append(uint8_t data); // Append data to FIFO
 void comm_send(); // Send appended data, just raw data, SLIP encoding in upper level
+
+// Firmware update
+void update_init(); // Update firmware start
+void update_data(uint8_t* data, int size); // Append data to Firmware image
+bool update_exec(); // Execute firmware update (lower level is responsible for validating the image)
+void update_confirm(); // Confirm that currently running firmware is ok
 
 // LOW LEVEL ==> UPPER LEVELS
 

@@ -1,7 +1,6 @@
 
 export interface ReadyMsg {
     type: 'ready',
-    stateStruct: StateStruct,
     state: StateType,
 };
 
@@ -24,7 +23,18 @@ export interface SetStateMsg {
     value: number | boolean,
 };
 
-export type Message = ReadyMsg | StartMsg | StopMsg | StateMsg | SetStateMsg;
+export interface ButtonMsg {
+    type: 'button',
+    index: number,
+    state: boolean,
+};
+
+export interface CommMsg {
+    type: 'comm',
+    buffer: Uint8Array,
+};
+
+export type Message = ReadyMsg | StartMsg | StopMsg | StateMsg | SetStateMsg | ButtonMsg | CommMsg;
 
 export type StateStruct = {
     [group: string]: {

@@ -1,5 +1,9 @@
 
-import { Message, StateStruct, StateType } from './common';
+import { Message, StateStruct, StateType } from './common.js';
+import { ProtoDecoder, ProtoPacket, ProtoType } from './proto.js';
+import { stateStruct } from './struct.js';
+
+let worker: Worker;
 
 function formatTime(element, value) {
     let date = new Date(1000 * value);
@@ -84,10 +88,19 @@ function updateState() {
 
     for (let [groupName, group] of Object.entries(stateStruct)) {
         for (let field of group) {
+            let element = document.querySelector('#state-' + field.name) as HTMLInputElement;
             if (field.type == 'double') {
-                (document.querySelector('#state-' + field.name) as HTMLInputElement).value = (state[field.name] as number).toString();
+                let oldVal = element.getAttribute('data-original-value') || element.value;
+                let newVal = (state[field.name] as number).toString();
+                if (oldVal != newVal) {
+                    element.value = newVal;
+                }
             } else {
-                (document.querySelector('#state-' + field.name) as HTMLInputElement).checked = state[field.name] as boolean;
+                let oldVal = element.checked;
+                let newVal = state[field.name] as boolean;
+                if (oldVal != newVal) {
+                    element.checked = newVal;
+                }
             }
         }
     }
@@ -133,11 +146,7 @@ function toggle(sel) {
     x = !x;
 }
 
-let worker = new Worker('worker.js', { type: 'module' });
-
-let stateStruct: StateStruct;
-
-function escapeHtml(unsafe) {
+function escapeHtml(unsafe: string) {
     return unsafe
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -152,11 +161,13 @@ function createStateTable() {
     for (let [groupName, group] of Object.entries(stateStruct)) {
         out += `<tr><td colspan="2">${escapeHtml(groupName)}</td></tr>`;
         for (let field of group) {
+            let readonly = field.method != 'param' && field.method != 'in' && field.method != 'out'; // TODO: delete OUT
             if (field.type == 'double') {
-                out += `<tr><td><input type="text" value="" id="state-${field.name}"></td><td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.comment)}</td></tr>`;
+                out += `<tr><td><input type="text" value="" id="state-${field.name}" ${readonly ? 'readonly' : ''}></td>`;
             } else {
-                out += `<tr><td><input type="checkbox" id="state-${field.name}"></td><td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.comment)}</td></tr>`;
+                out += `<tr><td><input type="checkbox" id="state-${field.name}" ${readonly ? 'onclick="return false;"' : ''}></td>`;
             }
+            out += `<td>${escapeHtml(field.name)}</td><td>${escapeHtml(field.comment)}</td></tr>`;
         }
     }
     out += '</table>';
@@ -177,11 +188,35 @@ function createStateTable() {
     }
 }
 
-worker.onmessage = (e: MessageEvent<Message>) => {
+let pd = new ProtoDecoder();
+pd.onPacket = (packet: ProtoPacket) => {
+    switch (packet.type) {
+        case ProtoType.INVALID:
+            console.error('Invalid packet');
+            break;
+        case ProtoType.LOG:
+            switch(packet.level) {
+                case 0:
+                    console.debug(packet.text);
+                    break;
+                case 1:
+                    console.info('%c' + packet.text, 'color: #55F');
+                    break;
+                default:
+                    console.error(packet.text);
+                    break;
+            }
+            if (packet.droppedPackets.filter(x => x).length > 0) {
+                console.error(`Dropped packets: ${packet.droppedPackets.join(', ')}`);
+            }
+    }
+}
+
+function workerMessage(e: MessageEvent<Message>) {
     let data = e.data;
     switch (data.type) {
         case 'ready':
-            stateStruct = data.stateStruct;
+            console.log('Worker ready');
             state = data.state;
             console.log(state);
             createStateTable();
@@ -193,6 +228,10 @@ worker.onmessage = (e: MessageEvent<Message>) => {
         case 'state':
             state = data.state;
             updateState();
+            break;
+        case 'comm':
+            //console.log(data.buffer);
+            pd.push(data.buffer);
             break;
     }
 }
@@ -253,8 +292,17 @@ function numberInRange(value: string, start: number, end: number) {
     return true;
 }
 
-/*
+async function main() {
+    console.log('b');
+    worker = new Worker('worker.js', { type: 'module' });
+    worker.onmessage = workerMessage;
+    worker.onerror = (...e) => console.log(...e);
+    console.log('Created worker', worker);
+}
 
+window.onload = () => { main(); };
+
+/*
 TODO: parametry wejściowe:
  * elektryczny / pellet - fizyczny przełącznik
  * lato / zima - fizyczny przełącznik

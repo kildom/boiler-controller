@@ -98,6 +98,7 @@ struct State {
     bool   R10;         // out   Relay 10 - zawór podl. 2 +/-
     bool   R11;         // out   Relay 11 - pompa podłogówki 2
     bool   R12;         // out   Relay 12 - pompa CWU
+    bool   R13;         // out   Relay 13 - buzzer
 
     // Wejścia
     bool   IN0;         // in    Input 0 - tryb zima
@@ -138,7 +139,7 @@ struct State {
         Tpiec = 70;       // mod   Temperatura wyjściowa pieca
         P0 = 0;          // calc  Aktualny przepływ pompki pieca
         P0v = 1;         // param Przepływ pompki pieca, gdy pracuje
-        Z0 = 0;          // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
+        Z0 = 0.4;        // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
         Z0dir = 0;       // mod   Aktualny kierunek zaworu powrotu pieca
 
         // Kocioł elektryczny
@@ -162,7 +163,7 @@ struct State {
         Twyj1 = 26;       // mod   Temperatura wyjściowa podłogówki 1
         P1 = 0;          // calc  Przepływ pompy podłogówki 1
         P1v = 1;         // param Przepływ pompy podłogówki 1, gdy pracuje
-        Z1 = 0;          // mod   Zawór podłogówki 1 (0 - niska. temp. podł, 1 - wysoka temp. podł)
+        Z1 = 0.31;          // mod   Zawór podłogówki 1 (0 - niska. temp. podł, 1 - wysoka temp. podł)
         Z1dir = 0;       // mod   Aktualny kierunek zaworu podłogówki 1
         Twyl1 = 20;       // mod   Temperatura wylewki 1
         Tdelta1 = 0;     // calc   Jak szybko upływa temperatura z wylewki 1 [°C/s].
@@ -172,7 +173,7 @@ struct State {
         Twyj2 = 26;       // mod   Temperatura wyjściowa podłogówki 2
         P2 = 0;          // calc  Przepływ pompy podłogówki 1
         P2v = 1;         // param Przepływ pompy podłogówki 2, gdy pracuje
-        Z2 = 0;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
+        Z2 = 0.98;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
         Z2dir = 0;       // mod   Aktualny kierunek zaworu podłogówki 2
         Twyl1 = 20;       // mod   Temperatura wylewki 1
         Tdelta1 = 0;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
@@ -213,6 +214,7 @@ struct State {
         R10 = 0;         // out   Relay 10 - zawór podl. 2 +/-
         R11 = 0;         // out   Relay 11 - pompa podłogówki 2
         R12 = 0;         // out   Relay 12 - pompa CWU
+        R13 = 0;         // out   Relay 13 - buzzer
 
         // Wejścia
         IN0 = 1;         // in    Input 0 - tryb zima

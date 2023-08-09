@@ -1,7 +1,9 @@
 {
     "compilerOptions": {
         "target": "ES2019",
-        "outDir": "web"
+        "outDir": "web",
+        "inlineSourceMap": true,
+        "inlineSources": true
     },
     "include": ["scripts/*.ts"]
 }

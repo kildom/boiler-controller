@@ -1,0 +1,14 @@
+{
+    "files.associations": {
+        "proto.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c",
+        "log.h": "c"
+    },
+    "cSpell.words": [
+        "czas",
+        "otwarcia",
+        "ZAWOR"
+    ]
+}

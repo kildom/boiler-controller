@@ -1,6 +1,7 @@
 
 Ideas for GUI:
 * https://botland.com.pl/moduly-nanopi/14635-nanopi-neo-v14-allwinner-h3-quad-core-12ghz-512mb-ram-bez-zlaczy-5904422377656.html
+* https://allegro.pl/oferta/mikrokomputer-orange-pi-zero-512mb-13680197462
 * OR: https://www.conrad.pl/pl/p/banana-pi-m2-zero-banana-pi-bpi-zero-512-mb-4-x-1-2-ghz-1646892.html
 * with node.js or deno HTTP server: serving static pages and do proxy between UART and WebSockets (packet level multiplexing, so multiple clients can run at once)
 * Local control:

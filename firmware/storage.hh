@@ -1,7 +1,7 @@
 #ifndef _STORAGE_H_
 #define _STORAGE_H_
 
-#include <stdint.h>
+#include "global.hh"
 #include "zawor.hh"
 
 struct Storage {
@@ -16,21 +16,15 @@ struct Storage {
 class StorageAccessor {
 public:
     Storage* operator*() const {
-        if (Storage::storage.ver == 0) {
-            Storage::init();
-        }
+        Storage::init();
         return &Storage::storage;
     }
     Storage* operator->() const {
-        if (Storage::storage.ver == 0) {
-            Storage::init();
-        }
+        Storage::init();
         return &Storage::storage;
     }
     operator Storage&() const {
-        if (Storage::storage.ver == 0) {
-            Storage::init();
-        }
+        Storage::init();
         return Storage::storage;
     }
 };

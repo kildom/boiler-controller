@@ -1,5 +1,5 @@
 
-#include "lowlevel.hh"
+#include "lowlevel.h"
 #include "proto.hh"
 #include "crc.hh"
 

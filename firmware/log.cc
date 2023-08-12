@@ -4,6 +4,7 @@
 #include "log.hh"
 #include "time.hh"
 #include "proto.hh"
+#include "diag.hh"
 
 #define MAX_LEVEL 2
 
@@ -12,8 +13,9 @@ static uint8_t dropped[MAX_LEVEL + 1] = { 0, 0, 0 };
 
 void log_send(int level)
 {
+	Diag::log(log_buffer);
     size_t len = strlen(log_buffer);
-    int free = Proto::available();
+    size_t free = Proto::available();
     if (1 + sizeof(dropped) + len > free) {
         dropped[level]++;
         if (dropped[level] == 0) {

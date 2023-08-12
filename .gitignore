@@ -4,3 +4,8 @@
 /simu/model/obj
 /simu/scripts/struct.ts
 /node_modules/
+/lowlevel/Debug/
+/lowlevel/Release/
+*.obj
+*.o
+*.d

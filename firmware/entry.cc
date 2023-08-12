@@ -1,9 +1,10 @@
 
-#include "lowlevel.hh"
+#include "lowlevel.h"
 #include "log.hh"
 #include "relays.hh"
 #include "zawor.hh"
 #include "storage.hh"
+#include "diag.hh"
 
 typedef enum Stage {
     STAGE_ENTER,
@@ -75,6 +76,7 @@ void stateStartup(Stage stage)
 void update_all()
 {
     Time::update_start();
+    Diag::update();
     zaw_powrotu.update();
     zaw_podl1.update();
     zaw_podl2.update();

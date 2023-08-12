@@ -1,8 +1,7 @@
 #ifndef _ZAWOR_H_
 #define _ZAWOR_H_
 
-#include <stdint.h>
-
+#include "global.hh"
 #include "relays.hh"
 #include "time.hh"
 

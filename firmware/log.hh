@@ -1,7 +1,7 @@
 #ifndef _LOG_H_
 #define _LOG_H_
 
-#include <stdio.h>
+#include "global.hh"
 
 extern char log_buffer[1024];
 

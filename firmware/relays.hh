@@ -1,8 +1,8 @@
 #ifndef _RELAYS_HH_
 #define _RELAYS_HH_
 
-#include <stdint.h>
-#include "lowlevel.hh"
+#include "global.hh"
+#include "lowlevel.h"
 
 class Relay {
 public:

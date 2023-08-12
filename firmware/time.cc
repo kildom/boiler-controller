@@ -1,7 +1,7 @@
 
 #include "time.hh"
 #include "deque.hh"
-#include "lowlevel.hh"
+#include "lowlevel.h"
 
 static const int MIN_UPDATE_INTERVAL = 500;
 

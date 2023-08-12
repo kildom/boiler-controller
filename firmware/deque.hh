@@ -1,6 +1,8 @@
 #ifndef _DEQUE_H_
 #define _DEQUE_H_
 
+#include "global.hh"
+
 class DequeItem {
 public:
     DequeItem* next;

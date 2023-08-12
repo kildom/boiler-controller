@@ -1,7 +1,7 @@
 #ifndef _TIMER_HH_
 #define _TIMER_HH_
 
-#include <stdint.h>
+#include "global.hh"
 #include "deque.hh"
 
 class Time {

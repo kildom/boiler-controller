@@ -1,7 +1,7 @@
 #ifndef _PROTO_H_
 #define _PROTO_H_
 
-#include <stdlib.h>
+#include "global.hh"
 
 class Proto {
 public:

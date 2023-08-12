@@ -73,7 +73,7 @@ void stateStartup(Stage stage)
     }
 }
 
-void update_all()
+void pre_update()
 {
     Time::update_start();
     Diag::update();
@@ -82,12 +82,18 @@ void update_all()
     zaw_podl2.update();
 }
 
+void post_update()
+{
+    Storage::update();
+}
+
 void startup_event()
 {
     INF("Controller startup");
     Storage::init();
-    update_all();
+    pre_update();
     setState(stateStartup);
+    post_update();
 }
 
 void button_event(int index, bool state)
@@ -97,8 +103,9 @@ void button_event(int index, bool state)
 
 void timeout_event()
 {
-    update_all();
+	pre_update();
     currentState(STAGE_UPDATE);
+    post_update();
 }
 
 void comm_event(uint8_t* data, int size)

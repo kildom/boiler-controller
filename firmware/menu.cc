@@ -81,9 +81,40 @@ static const MenuItem optionList[] = {
 	{}
 };
 
+static uint32_t write_state = 0;
+
+static const char* writeFuncStage(const MenuItem* item)
+{
+	static char buf[12];
+	sprintf(buf, "0x%08X", (unsigned int)write_state);
+	return buf;
+}
+
+static uint8_t the_source[] = "This is the text that should be used to test programming of store pages. Is it big enough?";
+static uint8_t the_temp[128];
+
+static bool writeFunc(const MenuItem* item, char data)
+{
+	int size = strlen((char*)the_source) + 1;
+	store_write(&write_state, 0, the_source, size);
+	return false;
+}
+
+static bool readFunc(const MenuItem* item, char data)
+{
+	store_read(0, the_temp, strlen((char*)the_source) + 1);
+	the_temp[strlen((char*)the_source)] = 0;
+	Diag::write("\r\n", -1, Diag::MENU);
+	Diag::write((char*)the_temp, -1, Diag::MENU);
+	Diag::write("\r\n", -1, Diag::MENU);
+	return false;
+}
+
 static const MenuItem rootList[] = {
 	{ "Option 1", nullFunc },
 	{ "Option 2", menuFunc, optionList },
+	{ "Write: ", writeFunc, NULL, writeFuncStage },
+	{ "Read", readFunc },
 	{}
 };
 

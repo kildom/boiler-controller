@@ -28,7 +28,7 @@ void timeout(uint32_t t); // Absolute time, just one timeout at a time (upper le
 
 // Persistent data
 void store_read(int slot, uint8_t* buffer, int size);
-bool store_write(uint32_t* state, int slot, const uint8_t* buffer, int size);
+void store_write(uint32_t* state, int slot, const uint8_t* buffer, int size); // Initial state==0, while state!=0 resume write later with the same parameters and state.
 
 // RGB LEDs
 extern uint32_t rgb_color[RGB_LED_COUNT];

@@ -75,6 +75,8 @@ void Error_Handler(void);
 /* USER CODE BEGIN Private defines */
 
 void handle_uart_events();
+void main_loop();
+
 int main(void);
 
 extern UART_HandleTypeDef hlpuart1;

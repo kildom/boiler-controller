@@ -39,8 +39,8 @@ void Zawor::full(int new_direction)
 
 bool Zawor::full_done()
 {
-    bool pos_ok = ((real_pos <= storage.czas_min_otwarcia + SMALL_TIME_MARGIN) && (direction <= 0))
-        || ((real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN) && (direction >= 0));
+    /* TODO: is needed? bool pos_ok = ((real_pos <= storage.czas_min_otwarcia + SMALL_TIME_MARGIN) && (direction <= 0))
+        || ((real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN) && (direction >= 0));*/
     return state == IDLE && work_time < LONG_WORK_TIME;
 }
 

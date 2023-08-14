@@ -56,7 +56,7 @@ static bool inputFunc(const MenuItem* item, char data)
 		line[lineIndex++] = data;
 		Diag::write(data, Diag::MENU);
 		return true;
-	} else if ((data == 8) || (data == 127) && lineIndex > 0) {
+	} else if (((data == 8) || (data == 127)) && lineIndex > 0) {
 		Diag::write("\x08 \x08", 3, Diag::MENU);
 		lineIndex--;
 		return true;

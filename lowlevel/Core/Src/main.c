@@ -168,40 +168,7 @@ skip_init:
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
-	// Wait for event (exit immediately if already set).
-	HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-	__WFE();
-	HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-
-	// The timeout event
-	if (LL_TIM_IsActiveFlag_CC1(htim2.Instance)) {
-		LL_TIM_ClearFlag_CC1(htim2.Instance);
-		// Set temporary timeout to 1 sec.
-		LL_TIM_OC_SetCompareCH1(htim2.Instance, LL_TIM_GetCounter(htim2.Instance) + 2000);
-		// Call timeout callback.
-		timeout_event();
-	}
-
-	handle_uart_events();
-
-	/*int comm_size;
-	uint8_t* comm_buffer;
-
-	while ((comm_buffer = read_comm_fifo(&comm_size))) {
-		comm_event(comm_buffer, comm_size);
-		sprintf((char*)buf, "%d\r\n", comm_size);
-		HAL_UART_Transmit_DMA(&hlpuart1, buf, strlen(buf));
-	}*/
-
-	//HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
-    //HAL_PWR_EnterSLEEPMode(PWR_MAINREGULATOR_ON, PWR_SLEEPENTRY_WFI);
-    //HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_RESET);
-	//for (volatile int i = 0; i < 10000000; i++);
-	/*uint32_t cnt = LL_TIM_GetCounter(htim2.Instance);
-	cnt /= 2000;
-	HAL_GPIO_WritePin(LED_BLUE_GPIO_Port, LED_BLUE_Pin, (cnt & 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(LED_GREEN_GPIO_Port, LED_GREEN_Pin, LL_TIM_IsActiveFlag_CC1(htim2.Instance) ? GPIO_PIN_SET : GPIO_PIN_RESET);*/
+	  main_loop();
   }
   /* USER CODE END 3 */
 }

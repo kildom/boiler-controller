@@ -17,7 +17,7 @@ void global_init(); // Initialize low level before calling any other function
 
 // IO
 void output(int index, bool state); // Relays and buzzer
-uint32_t analog_input(int index); // Raw value of analog input, converting and validating is done by upper level
+uint32_t analog_input(int index); // Raw 16-bit value of analog input, converting and validating is done by upper level
 
 // Time
 uint32_t get_time(); // Absolute from startup, upper level is responsible for converting to 64-bits and overflow handling

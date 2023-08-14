@@ -191,6 +191,38 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 	timerCaptured = true;
 }
 
+#include "time.hh"
+
+static Timer adcTimer(0);
+static uint16_t adc_values_dma[9];
+uint16_t adc_values[9];
+volatile bool adc_ready = false;
+
+void handle_adc()
+{
+	for (uint32_t i = 0; i < sizeof(adc_values) / sizeof(adc_values[0]); i++) {
+		adc_values[i] = (uint32_t)adc_values[i] * 15 / 16 + adc_values_dma[i];
+	}
+	auto res = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values_dma, sizeof(adc_values_dma) / sizeof(adc_values_dma[0]));
+	if (res != HAL_OK) {
+		ERR("ADC start error!");
+		// TODO: go to fatal error state
+	}
+	adcTimer.set(125);
+}
+
+uint32_t analog_input(int index)
+{
+	// TODO: ASSERT(index < sizeof(adc_values) / sizeof(adc_values[0]))
+	return adc_values[index];
+}
+
+extern "C"
+void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
+{
+	adc_ready = true;
+}
+
 void main_loop()
 {
 
@@ -210,6 +242,10 @@ void main_loop()
 	}
 
 	handle_uart_events();
+
+	if (adcTimer.ready()) {
+		handle_adc();
+	}
 
 	/*int comm_size;
 	uint8_t* comm_buffer;

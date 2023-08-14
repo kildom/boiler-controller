@@ -58,7 +58,7 @@ void Time::update_start()
     }
 }
 
-Timer::Timer(): time_absolute(Time::NEVER)
+Timer::Timer(uint64_t initial_time): time_absolute(initial_time)
 {
 }
 

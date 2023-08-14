@@ -81,40 +81,49 @@ static const MenuItem optionList[] = {
 	{}
 };
 
-static uint32_t write_state = 0;
+//static uint16_t value[9];
 
-static const char* writeFuncStage(const MenuItem* item)
+#include "stm32l5xx_hal.h"
+#include "main.h"
+
+static bool adcFunc(const MenuItem* item, char data)
 {
-	static char buf[12];
-	sprintf(buf, "0x%08X", (unsigned int)write_state);
-	return buf;
+	/*auto t = get_time();
+	for (int i = 0; i < 1000; i++) {
+		while (HAL_ADC_Start_DMA(&hadc1, (uint32_t*)value, 9) == HAL_BUSY);
+	}
+	int d = get_time() - t;
+	char buf[64];
+	sprintf(buf, "\r\ntime: %d\r\n", d);
+	Diag::write(buf, -1, Diag::MENU);*/
+	return false;
 }
 
-static uint8_t the_source[] = "This is the text that should be used to test programming of store pages. Is it big enough?";
-static uint8_t the_temp[128];
-
-static bool writeFunc(const MenuItem* item, char data)
+int get_temp(int x)
 {
-	int size = strlen((char*)the_source) + 1;
-	store_write(&write_state, 0, the_source, size);
-	return false;
+	//return (((312936 * x - 620439185) >> 11) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 12 bits ADC
+	return (((19559 * x - 620439186) >> 15) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 16 bits ADC
+	//return (((400989 * x + 99792223 ) >> 12) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 12 bits ADC
+	//return (((25062 * x + 99792227 ) >> 16) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 16 bits ADC
 }
 
 static bool readFunc(const MenuItem* item, char data)
 {
-	store_read(0, the_temp, strlen((char*)the_source) + 1);
-	the_temp[strlen((char*)the_source)] = 0;
+	char buf[64];
 	Diag::write("\r\n", -1, Diag::MENU);
-	Diag::write((char*)the_temp, -1, Diag::MENU);
-	Diag::write("\r\n", -1, Diag::MENU);
-	return false;
+	for (int i = 0; i < 9; i++) {
+		int t = analog_input(i);
+		sprintf(buf, "%d: %d %d\r\n", i + 1, t, get_temp(t));
+		Diag::write(buf, -1, Diag::MENU);
+	}
+	return adcFunc(item, data);
 }
 
 static const MenuItem rootList[] = {
 	{ "Option 1", nullFunc },
 	{ "Option 2", menuFunc, optionList },
-	{ "Write: ", writeFunc, NULL, writeFuncStage },
-	{ "Read", readFunc },
+	{ "ADC Start", adcFunc },
+	{ "ADC Read", readFunc },
 	{}
 };
 

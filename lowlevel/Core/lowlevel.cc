@@ -185,7 +185,8 @@ void handle_uart_events()
 
 static volatile bool timerCaptured = true;
 
-void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim)
+extern "C"
+void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 {
 	timerCaptured = true;
 }

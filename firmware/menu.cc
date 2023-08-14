@@ -52,11 +52,11 @@ static bool inputFunc(const MenuItem* item, char data)
 		line[lineIndex] = 0;
 		x = atoi(line);
 		return false;
-	} else if (data >= 32 && lineIndex < MAX_LINE_LEN - 1) {
+	} else if (data >= 32 && data < 127 && lineIndex < MAX_LINE_LEN - 1) {
 		line[lineIndex++] = data;
 		Diag::write(data, Diag::MENU);
 		return true;
-	} else if (data == 8 && lineIndex > 0) {
+	} else if ((data == 8) || (data == 127) && lineIndex > 0) {
 		Diag::write("\x08 \x08", 3, Diag::MENU);
 		lineIndex--;
 		return true;
@@ -175,7 +175,7 @@ static int keyInput(char data)
 {
 	if (data == 0 || data == '\r' || (data == '\n' && prevChar != '\r')) {
 		return KEY_ENTER;
-	} else if (data == 8) {
+	} else if ((data == 8) || (data == 127)) {
 		return KEY_BACKSPACE;
 	} else if (data >= '1' && data <= '9') {
 		return data - '1';

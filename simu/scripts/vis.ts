@@ -2,8 +2,17 @@
 import { Message, StateStruct, StateType } from './common.js';
 import { ProtoDecoder, ProtoPacket, ProtoType } from './proto.js';
 import { stateStruct } from './struct.js';
+import * as xterm from 'xterm';
+import * as xtermAddonFit from 'xterm-addon-fit';
+
+declare type Terminal = xterm.Terminal;
+declare const Terminal: typeof xterm.Terminal;
+declare const FitAddon: { FitAddon: typeof xtermAddonFit.FitAddon; };
 
 let worker: Worker;
+let term: Terminal;
+let fitAddon: xtermAddonFit.FitAddon;
+let textEncoder = new TextEncoder();
 
 function formatTime(element, value) {
     let date = new Date(1000 * value);
@@ -218,7 +227,6 @@ function workerMessage(e: MessageEvent<Message>) {
         case 'ready':
             console.log('Worker ready');
             state = data.state;
-            console.log(state);
             createStateTable();
             updateState();
             buttonControl('#start', () => msg({ type: 'start' }));
@@ -230,8 +238,10 @@ function workerMessage(e: MessageEvent<Message>) {
             updateState();
             break;
         case 'comm':
-            //console.log(data.buffer);
             pd.push(data.buffer);
+            break;
+        case 'diag':
+            term.write(data.buffer);
             break;
     }
 }
@@ -292,12 +302,28 @@ function numberInRange(value: string, start: number, end: number) {
     return true;
 }
 
+function diagTermInput(value: string) {
+    msg({type: 'diag', buffer: textEncoder.encode(value)});
+}
+
+function initTerm() {
+    let container = document.querySelector<HTMLElement>('#terminal');
+    term = new Terminal();
+    fitAddon = new FitAddon.FitAddon();
+    term.loadAddon(fitAddon);
+    term.onData(diagTermInput);
+    term.open(container);
+    fitAddon.fit();
+    window.addEventListener('resize', () => {
+        fitAddon.fit();
+    });
+}
+
 async function main() {
-    console.log('b');
+    initTerm();
     worker = new Worker('worker.js', { type: 'module' });
     worker.onmessage = workerMessage;
     worker.onerror = (...e) => console.log(...e);
-    console.log('Created worker', worker);
 }
 
 window.onload = () => { main(); };

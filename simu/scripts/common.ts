@@ -30,7 +30,7 @@ export interface ButtonMsg {
 };
 
 export interface CommMsg {
-    type: 'comm',
+    type: 'comm' | 'diag',
     buffer: Uint8Array,
 };
 

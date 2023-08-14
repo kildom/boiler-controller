@@ -3,7 +3,8 @@
         "target": "ES2019",
         "outDir": "web",
         "inlineSourceMap": true,
-        "inlineSources": true
+        "inlineSources": true,
+        "moduleResolution": "NodeNext"
     },
     "include": ["scripts/*.ts"]
 }

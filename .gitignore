@@ -6,6 +6,7 @@
 /node_modules/
 /lowlevel/Debug/
 /lowlevel/Release/
+/simu/web/xterm.*
 *.obj
 *.o
 *.d

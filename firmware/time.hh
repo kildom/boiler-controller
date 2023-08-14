@@ -6,8 +6,7 @@
 
 class Time {
 private:
-    static uint32_t prev_lo;
-    static uint32_t prev_hi;
+    static uint64_t prev;
     static uint64_t scheduled_update;
 public:
     static const uint64_t NEVER = 0x3FFFFFFFFFFFFFFFuLL;

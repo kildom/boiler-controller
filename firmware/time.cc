@@ -5,8 +5,10 @@
 
 static const int MIN_UPDATE_INTERVAL = 500;
 
-uint32_t Time::prev_lo = 0;
-uint32_t Time::prev_hi = 0;
+#define LOW_LEVEL_END ((uint32_t)(1 << TIME_BITS))
+#define LOW_LEVEL_MASK (LOW_LEVEL_END - (uint32_t)1)
+
+uint64_t Time::prev = 0;
 int Time::delta = 0;
 uint64_t Time::time = 0;
 uint64_t Time::scheduled_update = MIN_UPDATE_INTERVAL;
@@ -14,12 +16,10 @@ static Deque timers = { .first = nullptr };
 
 uint64_t Time::real_time()
 {
-    auto now_lo = get_time();
-    if ((now_lo ^ prev_lo) >> 31) {
-        prev_hi++;
-    }
-    prev_lo = now_lo;
-    return (uint64_t)prev_lo | (uint64_t)prev_hi << 32;
+    uint32_t now = get_time();
+    int32_t diff = (int32_t)((now << (32 - TIME_BITS)) - ((uint32_t)prev << (32 - TIME_BITS))) >> (32 - TIME_BITS);
+    prev += (int64_t)diff;
+    return prev;
 }
 
 void Time::schedule(int time_relative)
@@ -34,7 +34,7 @@ void Time::schedule_absolute(uint64_t time_absolute)
     }
     if (time_absolute < scheduled_update) {
         scheduled_update = time_absolute;
-        timeout((uint32_t)scheduled_update);
+        timeout((uint32_t)scheduled_update & LOW_LEVEL_MASK);
     }
 }
 
@@ -44,7 +44,7 @@ void Time::update_start()
     delta = now - time;
     time = now;
     scheduled_update = now + MIN_UPDATE_INTERVAL;
-    timeout((uint32_t)scheduled_update);
+    timeout((uint32_t)scheduled_update & LOW_LEVEL_MASK);
 
     auto timer = timers.get_first<Timer>();
     while (timer != nullptr) {

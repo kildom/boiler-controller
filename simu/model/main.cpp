@@ -3,7 +3,7 @@
 
 #include "model.hpp"
 
-#include "lowlevel.hh"
+#include "lowlevel.h"
 
 #define WASM_EXPORT(name) \
     __attribute__((used)) \
@@ -15,16 +15,17 @@
     __attribute__((import_name(#name)))
 
 
-WASM_IMPORT(commSend)
-void commSend(uint8_t* data, int size);
-
-
 static State state;
 static bool startupDone = false;
 static double timeoutLeft = 1000000000.0;
 static std::vector<uint8_t> commReceiveBuffer(0);
 static std::vector<uint8_t> commSendBuffer(0);
+static std::vector<uint8_t> diagReceiveBuffer(0);
+static std::vector<uint8_t> diagSendBuffer(0);
 
+void global_init()
+{
+}
 
 uint32_t get_time()
 {
@@ -49,9 +50,31 @@ void comm_append(uint8_t data)
 
 void comm_send()
 {
+    WASM_IMPORT(commSend)
+    void commSend(uint8_t* data, int size);
     commSend(commSendBuffer.data(), commSendBuffer.size());
     commSendBuffer.clear();
 }
+
+
+int diag_free()
+{
+    return 2048 - diagSendBuffer.size();
+}
+
+void diag_append(uint8_t data)
+{
+    diagSendBuffer.push_back(data);
+}
+
+void diag_send()
+{
+    WASM_IMPORT(diagSend)
+    void diagSend(uint8_t* data, int size);
+    diagSend(diagSendBuffer.data(), diagSendBuffer.size());
+    diagSendBuffer.clear();
+}
+
 
 void output(int index, bool value)
 {
@@ -73,19 +96,20 @@ void output(int index, bool value)
     }
 }
 
-void store_read(uint8_t* buffer, int size)
+void store_read(int slot, uint8_t* buffer, int size)
 {
     WASM_IMPORT(storeRead)
-    void storeRead(uint8_t* buffer, int size);
-    storeRead(buffer, size);
+    void storeRead(int slot, uint8_t* buffer, int size);
+    storeRead(slot, buffer, size);
 }
 
-void store_write(const uint8_t* buffer, int size)
+void store_write(uint32_t* state, int slot, const uint8_t* buffer, int size)
 {
     WASM_IMPORT(storeWrite)
-    void storeWrite(const uint8_t* buffer, int size);
-    storeWrite(buffer, size);
+    uint32_t storeWrite(uint32_t state, int slot, const uint8_t* buffer, int size);
+    *state = storeWrite(*state, slot, buffer, size);
 }
+
 
 WASM_EXPORT(steps)
 void steps(int count, double maxStepTime)
@@ -97,6 +121,10 @@ void steps(int count, double maxStepTime)
     if (commReceiveBuffer.size() > 0) {
         comm_event(commReceiveBuffer.data(), commReceiveBuffer.size());
         commReceiveBuffer.clear();
+    }
+    if (diagReceiveBuffer.size() > 0) {
+        diag_event(diagReceiveBuffer.data(), diagReceiveBuffer.size());
+        diagReceiveBuffer.clear();
     }
     for (int i = 0; i < count; i++) {
         if (timeoutLeft <= maxStepTime) {
@@ -123,6 +151,14 @@ uint8_t* commRecv(int size)
     auto oldSize = commReceiveBuffer.size();
     commReceiveBuffer.resize(oldSize + size);
     return commReceiveBuffer.data() + oldSize;
+}
+
+WASM_EXPORT(diagRecv)
+uint8_t* diagRecv(int size)
+{
+    auto oldSize = diagReceiveBuffer.size();
+    diagReceiveBuffer.resize(oldSize + size);
+    return diagReceiveBuffer.data() + oldSize;
 }
 
 WASM_EXPORT(button)

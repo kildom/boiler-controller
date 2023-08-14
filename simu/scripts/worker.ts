@@ -8,14 +8,16 @@ interface WebAssemblyExports {
     getState(): number;
     steps(count: number, maxStepTime: number): void;
     commRecv(size: number): number;
+    diagRecv(size: number): number;
     button(index: number, state: number): void;
 };
 
 interface WebAssemblyImports {
     env: {
         commSend(data: number, size: number): void;
-        storeRead(buffer: number, size: number): void;
-        storeWrite(buffer: number, size: number): void;
+        diagSend(data: number, size: number): void;
+        storeRead(slot: number, buffer: number, size: number): void;
+        storeWrite(state: number, slot: number, buffer: number, size: number): number;
     };
     wasi_snapshot_preview1: {
         fd_close(): number;
@@ -32,7 +34,6 @@ let stateOffset: number;
 let running: boolean;
 let stepsPerSecond: number = 10;
 let state: StateType = {};
-let storage: Uint8Array | null = null;
 let db: IDBDatabase;
 
 
@@ -91,6 +92,13 @@ function commRecv(buffer: Uint8Array) {
     out.set(buffer);
 }
 
+function diagRecv(buffer: Uint8Array) {
+    let size = buffer.length;
+    let offset = exports.diagRecv(size);
+    let out = new Uint8Array(memory.buffer, offset, size);
+    out.set(buffer);
+}
+
 onmessage = (e: MessageEvent<Message>) => {
     let data = e.data;
     switch (data.type) {
@@ -109,6 +117,9 @@ onmessage = (e: MessageEvent<Message>) => {
         case 'comm':
             commRecv(data.buffer);
             break;
+        case 'diag':
+            diagRecv(data.buffer);
+            break;
         default:
             throw new Error();
     }
@@ -123,44 +134,51 @@ function commSend(dataOffset: number, size: number): void {
     msg({ type: 'comm', buffer: buffer });
 };
 
+function diagSend(dataOffset: number, size: number): void {
+    let buffer = new Uint8Array(exports.memory.buffer, dataOffset, size).slice();
+    msg({ type: 'diag', buffer: buffer });
+};
 
-function storeRead(dataOffset: number, size: number): void {
+
+let slotWriting = false;
+let slotData = [new Uint8Array(0), new Uint8Array(0)];
+
+function storeRead(slot: number, dataOffset: number, size: number): void {
     let buffer = new Uint8Array(exports.memory.buffer, dataOffset, size);
-    if (storage === null || size != storage.length) {
-        buffer.fill(0);
+    if (size != slotData[slot].length) {
+        buffer.fill(0xFF);
     } else {
-        buffer.set(storage);
+        buffer.set(slotData[slot]);
     }
 }
 
-let storageWriteState: 'none' | 'writing' | 'pending' = 'none';
+function storeWrite(state: number, slot: number, dataOffset: number, size: number): number {
+    let data = new Uint8Array(exports.memory.buffer, dataOffset, size).slice();
 
-function writeStorageToDatabase() {
-    if (storageWriteState != 'none') {
-        storageWriteState = 'pending';
-        return;
-    }
-    storageWriteState = 'writing';
-    let store = db.transaction('storage', 'readwrite').objectStore('storage');
-    let req = store.add({ key: 1, value: storage });
-    req.onsuccess = event => {
-        store.transaction.commit();
-        if (storageWriteState == 'pending') {
-            storageWriteState = 'none';
-            writeStorageToDatabase();
+    if (state == 0) {
+        if (slotWriting) {
+            throw new Error('Invalid slot state');
         }
-        storageWriteState = 'none';
-    };
-    req.onerror = event => {
-        store.transaction.abort();
-        storageWriteState = 'none';
-        console.error('Write to database error!');
+        slotWriting = true;
+        let store = db.transaction('storage', 'readwrite').objectStore('storage');
+        let req = store.put({ key: slot, value: data });
+        req.onsuccess = event => {
+            store.transaction.commit();
+            slotWriting = false;
+            slotData[slot] = data;
+        };
+        req.onerror = event => {
+            store.transaction.abort();
+            slotWriting = false;
+            console.error('Write to database error!', event, { key: slot, value: data });
+        }
+        return 1;
+    } else if (state < 10) {
+        state++;
+        return state;
+    } else {
+        return slotWriting ? 100 : 0;
     }
-}
-
-function storeWrite(dataOffset: number, size: number): void {
-    storage = new Uint8Array(exports.memory.buffer, dataOffset, size).slice();
-    writeStorageToDatabase();
 }
 
 let wasiStubs = {
@@ -176,7 +194,7 @@ let wasiStubs = {
 }
 
 async function reset() {
-    let imports: WebAssemblyImports = { env: { commSend, storeRead, storeWrite }, wasi_snapshot_preview1: wasiStubs };
+    let imports: WebAssemblyImports = { env: { commSend, diagSend, storeRead, storeWrite }, wasi_snapshot_preview1: wasiStubs };
     model = await WebAssembly.instantiate(module, imports as unknown as WebAssembly.Imports);
     exports = model.exports as unknown as WebAssemblyExports;
     exports._initialize();
@@ -217,21 +235,19 @@ async function loadStorage() {
             store = db.createObjectStore('storage', { keyPath: 'key' });
             break;
     }
-    let getReq = store.get(1);
+    let getReq = store.getAll(IDBKeyRange.bound(0, 1));
     promise = new Promise<any>(r => { resolve = r; });
     getReq.onerror = (event) => resolve(event.type);
     getReq.onsuccess = (event) => resolve(event.type);
     switch (await promise) {
         case 'success':
-            if (getReq.result) {
-                storage = getReq.result.value;
-            } else {
-                storage = null;
-                console.log('Storage empty!');
+            console.log(`Slots available: ${getReq.result.length}`);
+            for (let row of (getReq.result || [])) {
+                console.log(`Slot ${row.key} initialized`);
+                slotData[row.key] = row.value;
             }
             break;
         case 'error':
-            storage = null;
             console.log('Storage read error!');
             break;
     }
@@ -239,8 +255,8 @@ async function loadStorage() {
 }
 
 async function main() {
-    module = await WebAssembly.compileStreaming(fetch('model.wasm'));
     await loadStorage();
+    module = await WebAssembly.compileStreaming(fetch('model.wasm'));
     await reset();
     updateState(false);
     msg({ type: 'ready', state });

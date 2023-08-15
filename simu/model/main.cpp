@@ -96,6 +96,29 @@ void output(int index, bool value)
     }
 }
 
+uint32_t analog_input(int index)
+{
+    double x;
+    switch (index) {
+        case 0: x = state.Tpiec; break;
+        case 1: x = state.Tpowr; break;
+        case 2: x = state.Tele; break;
+        case 3: x = state.Tpodl1; break;
+        case 4: x = state.Twyj1; break;
+        case 5: x = state.Tpodl2; break;
+        case 6: x = state.Twyj2; break;
+        case 7: x = state.Tzas; break;
+        case 8: x = -50; break;
+        default: x = 20; break; // TODO: ASSERT
+    }
+    double raw = -0.2655244 * x * x + 139.607 * x + 34124.1915; // KTY81/210 + 1.5K resistor with 16-bit ADC
+    //double raw = -0.19755154254 * x * x + 138.755151256 * x + 27791.13537582; // KTY81/210 + 2.21K resistor with 16-bit ADC
+    if (raw < 0) return 0;
+    if (raw > 65535) return 65535;
+    return (uint32_t)(raw + 0.5);
+}
+
+
 void store_read(int slot, uint8_t* buffer, int size)
 {
     WASM_IMPORT(storeRead)

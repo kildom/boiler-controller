@@ -81,10 +81,6 @@ static const MenuItem optionList[] = {
 	{}
 };
 
-//static uint16_t value[9];
-
-#include "stm32l5xx_hal.h"
-#include "main.h"
 
 static bool adcFunc(const MenuItem* item, char data)
 {

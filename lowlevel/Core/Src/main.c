@@ -726,6 +726,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
+  for (int i = 0; i < 16; i++) {
+    output(i, false);
+  }
 /* USER CODE END MX_GPIO_Init_2 */
 }
 

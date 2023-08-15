@@ -119,11 +119,50 @@ static bool readFunc(const MenuItem* item, char data)
 	return adcFunc(item, data);
 }
 
+static bool relayState[16];
+
+static bool realyFunc(const MenuItem* item, char data)
+{
+	int i = (int)item->sub;
+	relayState[i] = !relayState[i];
+	output(i, relayState[i]);
+	return false;
+}
+
+static const char* relayName(const MenuItem* item)
+{
+	static char buf[10];
+	int i = (int)item->sub;
+	sprintf(buf, "%d: %s", i, relayState[i] ? "on" : "off");
+	return buf;
+}
+
+static const MenuItem relaysList[] = {
+	{ "Relay ", realyFunc, (void*)0, relayName },
+	{ "Relay ", realyFunc, (void*)1, relayName },
+	{ "Relay ", realyFunc, (void*)2, relayName },
+	{ "Relay ", realyFunc, (void*)3, relayName },
+	{ "Relay ", realyFunc, (void*)4, relayName },
+	{ "Relay ", realyFunc, (void*)5, relayName },
+	{ "Relay ", realyFunc, (void*)6, relayName },
+	{ "Relay ", realyFunc, (void*)7, relayName },
+	{ "Relay ", realyFunc, (void*)8, relayName },
+	{ "Relay ", realyFunc, (void*)9, relayName },
+	{ "Relay ", realyFunc, (void*)10, relayName },
+	{ "Relay ", realyFunc, (void*)11, relayName },
+	{ "Relay ", realyFunc, (void*)12, relayName },
+	{ "Relay ", realyFunc, (void*)13, relayName },
+	{ "Relay ", realyFunc, (void*)14, relayName },
+	{ "Relay ", realyFunc, (void*)15, relayName },
+	{}
+};
+
 static const MenuItem rootList[] = {
 	{ "Option 1", nullFunc },
 	{ "Option 2", menuFunc, optionList },
 	{ "ADC Start", adcFunc },
 	{ "ADC Read", readFunc },
+	{ "Relays", menuFunc, relaysList },
 	{}
 };
 
@@ -169,7 +208,7 @@ static void showMenu()
 		}
 		sub++;
 		index++;
-		if (index > '9') {
+		if (index == ('9' + 1)) {
 			index = 'A';
 		}
 	}

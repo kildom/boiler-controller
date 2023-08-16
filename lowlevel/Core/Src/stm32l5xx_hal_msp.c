@@ -22,7 +22,6 @@
 #include "main.h"
 
 /* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 extern DMA_HandleTypeDef hdma_adc1;
 
@@ -36,36 +35,29 @@ extern DMA_HandleTypeDef hdma_usart2_tx;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
-
 /* USER CODE END TD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN Define */
-
 /* USER CODE END Define */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN Macro */
-
 /* USER CODE END Macro */
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* External functions --------------------------------------------------------*/
 /* USER CODE BEGIN ExternalFunctions */
-
 /* USER CODE END ExternalFunctions */
 
 /* USER CODE BEGIN 0 */
-
 /* USER CODE END 0 */
 /**
   * Initializes the Global MSP.
@@ -73,7 +65,6 @@ extern DMA_HandleTypeDef hdma_usart2_tx;
 void HAL_MspInit(void)
 {
   /* USER CODE BEGIN MspInit 0 */
-
   /* USER CODE END MspInit 0 */
 
   __HAL_RCC_SYSCFG_CLK_ENABLE();
@@ -87,7 +78,6 @@ void HAL_MspInit(void)
   HAL_NVIC_EnableIRQ(FLASH_IRQn);
 
   /* USER CODE BEGIN MspInit 1 */
-
   /* USER CODE END MspInit 1 */
 }
 
@@ -104,7 +94,6 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
   if(hadc->Instance==ADC1)
   {
   /* USER CODE BEGIN ADC1_MspInit 0 */
-
   /* USER CODE END ADC1_MspInit 0 */
 
   /** Initializes the peripherals clock
@@ -172,7 +161,6 @@ void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
     __HAL_LINKDMA(hadc,DMA_Handle,hdma_adc1);
 
   /* USER CODE BEGIN ADC1_MspInit 1 */
-
   /* USER CODE END ADC1_MspInit 1 */
   }
 
@@ -189,7 +177,6 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
   if(hadc->Instance==ADC1)
   {
   /* USER CODE BEGIN ADC1_MspDeInit 0 */
-
   /* USER CODE END ADC1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_ADC_CLK_DISABLE();
@@ -214,7 +201,6 @@ void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
     /* ADC1 DMA DeInit */
     HAL_DMA_DeInit(hadc->DMA_Handle);
   /* USER CODE BEGIN ADC1_MspDeInit 1 */
-
   /* USER CODE END ADC1_MspDeInit 1 */
   }
 
@@ -233,7 +219,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
   if(huart->Instance==LPUART1)
   {
   /* USER CODE BEGIN LPUART1_MspInit 0 */
-
   /* USER CODE END LPUART1_MspInit 0 */
 
   /** Initializes the peripherals clock
@@ -310,13 +295,11 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     HAL_NVIC_SetPriority(LPUART1_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(LPUART1_IRQn);
   /* USER CODE BEGIN LPUART1_MspInit 1 */
-
   /* USER CODE END LPUART1_MspInit 1 */
   }
   else if(huart->Instance==USART2)
   {
   /* USER CODE BEGIN USART2_MspInit 0 */
-
   /* USER CODE END USART2_MspInit 0 */
 
   /** Initializes the peripherals clock
@@ -389,7 +372,6 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     __HAL_LINKDMA(huart,hdmatx,hdma_usart2_tx);
 
   /* USER CODE BEGIN USART2_MspInit 1 */
-
   /* USER CODE END USART2_MspInit 1 */
   }
 
@@ -406,7 +388,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
   if(huart->Instance==LPUART1)
   {
   /* USER CODE BEGIN LPUART1_MspDeInit 0 */
-
   /* USER CODE END LPUART1_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_LPUART1_CLK_DISABLE();
@@ -424,13 +405,11 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     /* LPUART1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(LPUART1_IRQn);
   /* USER CODE BEGIN LPUART1_MspDeInit 1 */
-
   /* USER CODE END LPUART1_MspDeInit 1 */
   }
   else if(huart->Instance==USART2)
   {
   /* USER CODE BEGIN USART2_MspDeInit 0 */
-
   /* USER CODE END USART2_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_USART2_CLK_DISABLE();
@@ -445,7 +424,6 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     HAL_DMA_DeInit(huart->hdmarx);
     HAL_DMA_DeInit(huart->hdmatx);
   /* USER CODE BEGIN USART2_MspDeInit 1 */
-
   /* USER CODE END USART2_MspDeInit 1 */
   }
 
@@ -463,7 +441,6 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
   if(hrtc->Instance==RTC)
   {
   /* USER CODE BEGIN RTC_MspInit 0 */
-
   /* USER CODE END RTC_MspInit 0 */
 
   /** Initializes the peripherals clock
@@ -479,7 +456,6 @@ void HAL_RTC_MspInit(RTC_HandleTypeDef* hrtc)
     __HAL_RCC_RTC_ENABLE();
     __HAL_RCC_RTCAPB_CLK_ENABLE();
   /* USER CODE BEGIN RTC_MspInit 1 */
-
   /* USER CODE END RTC_MspInit 1 */
   }
 
@@ -496,13 +472,11 @@ void HAL_RTC_MspDeInit(RTC_HandleTypeDef* hrtc)
   if(hrtc->Instance==RTC)
   {
   /* USER CODE BEGIN RTC_MspDeInit 0 */
-
   /* USER CODE END RTC_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_RTC_DISABLE();
     __HAL_RCC_RTCAPB_CLK_DISABLE();
   /* USER CODE BEGIN RTC_MspDeInit 1 */
-
   /* USER CODE END RTC_MspDeInit 1 */
   }
 
@@ -519,7 +493,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
   if(htim_base->Instance==TIM2)
   {
   /* USER CODE BEGIN TIM2_MspInit 0 */
-
   /* USER CODE END TIM2_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_TIM2_CLK_ENABLE();
@@ -527,7 +500,6 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
     HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(TIM2_IRQn);
   /* USER CODE BEGIN TIM2_MspInit 1 */
-
   /* USER CODE END TIM2_MspInit 1 */
   }
 
@@ -544,7 +516,6 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
   if(htim_base->Instance==TIM2)
   {
   /* USER CODE BEGIN TIM2_MspDeInit 0 */
-
   /* USER CODE END TIM2_MspDeInit 0 */
     /* Peripheral clock disable */
     __HAL_RCC_TIM2_CLK_DISABLE();
@@ -552,12 +523,10 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
     /* TIM2 interrupt DeInit */
     HAL_NVIC_DisableIRQ(TIM2_IRQn);
   /* USER CODE BEGIN TIM2_MspDeInit 1 */
-
   /* USER CODE END TIM2_MspDeInit 1 */
   }
 
 }
 
 /* USER CODE BEGIN 1 */
-
 /* USER CODE END 1 */

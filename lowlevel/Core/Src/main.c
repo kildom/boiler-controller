@@ -21,28 +21,18 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
-#include "stm32l5xx_ll_tim.h"
-#include "stm32l5xx_hal_pwr.h"
-#include "stm32l5xx_hal_dma.h"
-#include "stm32l5xx_hal_uart.h"
-#include "lowlevel.h"
-
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -61,7 +51,6 @@ RTC_HandleTypeDef hrtc;
 TIM_HandleTypeDef htim2;
 
 /* USER CODE BEGIN PV */
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -75,28 +64,22 @@ static void MX_TIM2_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-
 #define MAIN_UNINITIALIZED 1
 #define MAIN_INIT 2
 static uint8_t flags = MAIN_UNINITIALIZED;
 
-void global_init()
+void main_construct_init()
 {
-	if (flags & MAIN_UNINITIALIZED) {
-		flags |= MAIN_INIT;
-		main();
-	}
+  if (flags & MAIN_UNINITIALIZED) {
+    flags |= MAIN_INIT;
+    main();
+  }
 }
-
-extern volatile bool adc_ready;
-extern volatile uint16_t adc_values_dma[9];
-extern uint32_t adc_values[9];
 
 /* USER CODE END 0 */
 
@@ -108,11 +91,11 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-	/*
-	 * 0 - jump to main loop
-	 * MAIN_UNINITIALIZED - do all
-	 * MAIN_UNINITIALIZED | MAIN_INIT - just initialize
-	 */
+  /* flags:
+   *   0 - jump to main loop
+   *   MAIN_UNINITIALIZED - do all
+   *   MAIN_UNINITIALIZED | MAIN_INIT - just initialize
+   */
   if (!(flags & MAIN_UNINITIALIZED)) {
 	goto skip_init;
   }
@@ -125,14 +108,12 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
   /* USER CODE END Init */
 
   /* Configure the system clock */
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -146,25 +127,7 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
-  HAL_RCCEx_EnableMSIPLLMode();
-  HAL_TIM_Base_Start(&htim2);
-
-  LL_TIM_OC_SetCompareCH1(htim2.Instance, 2000);
-  LL_TIM_EnableIT_CC1(htim2.Instance);
-
-  HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
-
-  HAL_StatusTypeDef res = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values_dma, sizeof(adc_values_dma) / sizeof(adc_values_dma[0]));
-  while (res != HAL_OK) {} // TODO: go to fatal error state
-  while (!adc_ready) {}
-
-	for (uint32_t i = 0; i < sizeof(adc_values) / sizeof(adc_values[0]); i++) {
-		adc_values[i] = adc_values_dma[i] * 16 * 4096;
-	}
-
-  //HAL_SuspendTick();
-  HAL_SetTickFreq(HAL_TICK_FREQ_10HZ);
-  CLEAR_BIT(SCB->SCR, ((uint32_t)SCB_SCR_SLEEPDEEP_Msk));
+  main_post_init();
 
   flags &= ~MAIN_UNINITIALIZED;
 
@@ -175,7 +138,7 @@ skip_init:
 	return 0;
   }
 
-  startup_event();
+  main_pre_loop();
 
   /* USER CODE END 2 */
 
@@ -256,14 +219,12 @@ static void MX_ADC1_Init(void)
 {
 
   /* USER CODE BEGIN ADC1_Init 0 */
-
   /* USER CODE END ADC1_Init 0 */
 
   ADC_MultiModeTypeDef multimode = {0};
   ADC_ChannelConfTypeDef sConfig = {0};
 
   /* USER CODE BEGIN ADC1_Init 1 */
-
   /* USER CODE END ADC1_Init 1 */
 
   /** Common config
@@ -381,7 +342,6 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC1_Init 2 */
-
   /* USER CODE END ADC1_Init 2 */
 
 }
@@ -395,11 +355,9 @@ static void MX_ICACHE_Init(void)
 {
 
   /* USER CODE BEGIN ICACHE_Init 0 */
-
   /* USER CODE END ICACHE_Init 0 */
 
   /* USER CODE BEGIN ICACHE_Init 1 */
-
   /* USER CODE END ICACHE_Init 1 */
 
   /** Enable instruction cache in 1-way (direct mapped cache)
@@ -413,7 +371,6 @@ static void MX_ICACHE_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ICACHE_Init 2 */
-
   /* USER CODE END ICACHE_Init 2 */
 
 }
@@ -427,11 +384,9 @@ static void MX_LPUART1_UART_Init(void)
 {
 
   /* USER CODE BEGIN LPUART1_Init 0 */
-
   /* USER CODE END LPUART1_Init 0 */
 
   /* USER CODE BEGIN LPUART1_Init 1 */
-
   /* USER CODE END LPUART1_Init 1 */
   hlpuart1.Instance = LPUART1;
   hlpuart1.Init.BaudRate = 115200;
@@ -461,7 +416,6 @@ static void MX_LPUART1_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN LPUART1_Init 2 */
-
   /* USER CODE END LPUART1_Init 2 */
 
 }
@@ -475,11 +429,9 @@ static void MX_USART2_UART_Init(void)
 {
 
   /* USER CODE BEGIN USART2_Init 0 */
-
   /* USER CODE END USART2_Init 0 */
 
   /* USER CODE BEGIN USART2_Init 1 */
-
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 115200;
@@ -509,7 +461,6 @@ static void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
-
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -523,13 +474,11 @@ static void MX_RTC_Init(void)
 {
 
   /* USER CODE BEGIN RTC_Init 0 */
-
   /* USER CODE END RTC_Init 0 */
 
   RTC_PrivilegeStateTypeDef privilegeState = {0};
 
   /* USER CODE BEGIN RTC_Init 1 */
-
   /* USER CODE END RTC_Init 1 */
 
   /** Initialize RTC Only
@@ -556,7 +505,6 @@ static void MX_RTC_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN RTC_Init 2 */
-
   /* USER CODE END RTC_Init 2 */
 
 }
@@ -570,14 +518,12 @@ static void MX_TIM2_Init(void)
 {
 
   /* USER CODE BEGIN TIM2_Init 0 */
-
   /* USER CODE END TIM2_Init 0 */
 
   TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
-
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 54999;
@@ -601,7 +547,6 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN TIM2_Init 2 */
-
   /* USER CODE END TIM2_Init 2 */
 
 }
@@ -731,14 +676,11 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(LED_BLUE_GPIO_Port, &GPIO_InitStruct);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
-  for (int i = 0; i < 16; i++) {
-    output(i, false);
-  }
+  gpio_post_init();
 /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
-
 /* USER CODE END 4 */
 
 /**
@@ -750,7 +692,7 @@ void Error_Handler(void)
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
+  while (1) // TODO: better error handler
   {
   }
   /* USER CODE END Error_Handler_Debug */
@@ -769,6 +711,7 @@ void assert_failed(uint8_t *file, uint32_t line)
   /* USER CODE BEGIN 6 */
   /* User can add his own implementation to report the file name and line number,
      ex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
+  // TODO: consider enabling asserts
   /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */

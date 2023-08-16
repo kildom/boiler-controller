@@ -3,7 +3,8 @@
 
 #include "model.hpp"
 
-#include "lowlevel.h"
+#include "lowlevel.hh"
+#include "log.hh"
 
 #define WASM_EXPORT(name) \
     __attribute__((used)) \
@@ -17,7 +18,7 @@
 
 static State state;
 static bool startupDone = false;
-static double timeoutLeft = 1000000000.0;
+static double timeoutLeft = (double)PERIODIC_TIMEOUT / 1000.0;
 static std::vector<uint8_t> commReceiveBuffer(0);
 static std::vector<uint8_t> commSendBuffer(0);
 static std::vector<uint8_t> diagReceiveBuffer(0);
@@ -154,7 +155,7 @@ void steps(int count, double maxStepTime)
             if (timeoutLeft > 0.00000001) {
                 state.step(timeoutLeft);
             }
-            timeoutLeft = 1000000000.0;
+            timeoutLeft = (double)PERIODIC_TIMEOUT / 1000.0;
             timeout_event();
         } else {
             timeoutLeft -= maxStepTime;
@@ -187,5 +188,5 @@ uint8_t* diagRecv(int size)
 WASM_EXPORT(button)
 void button(int index, int state)
 {
-    button_event(index, state ? true : false);
+    // TODO: maybe later: button_event(index, state ? true : false);
 }

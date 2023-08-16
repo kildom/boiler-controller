@@ -5,7 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "lowlevel.h"
+#include "lowlevel.hh"
 
 static struct _GlobalInit {
 	_GlobalInit() {

@@ -31,29 +31,24 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
-
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -106,8 +101,13 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
-void handle_uart_events();
+extern uint32_t sysTickEvent;
+
+void main_pre_loop();
 void main_loop();
+void main_construct_init();
+void main_post_init();
+void gpio_post_init();
 
 int main(void);
 
@@ -121,7 +121,6 @@ extern DMA_HandleTypeDef hdma_usart2_rx;
 extern DMA_HandleTypeDef hdma_usart2_tx;
 extern RTC_HandleTypeDef hrtc;
 extern TIM_HandleTypeDef htim2;
-
 
 /* USER CODE END Private defines */
 

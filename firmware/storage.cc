@@ -3,7 +3,7 @@
 #include <string.h>
 #include "log.hh"
 #include "crc.hh"
-#include "lowlevel.h"
+#include "lowlevel.hh"
 #include "storage.hh"
 
 #define STORAGE_MAGIC1 (0x5B095F03 + (sizeof(Storage) << 12))

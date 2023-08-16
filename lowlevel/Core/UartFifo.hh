@@ -48,7 +48,7 @@ public:
 	void send();
 	void complete_callback(UART_HandleTypeDef* src_uart) {
 		if (src_uart == &uart) {
-			__atomic_fetch_and(&busy, ~1, __ATOMIC_SEQ_CST);
+			__atomic_fetch_and(&busy, ~1, __ATOMIC_SEQ_CST); // atomic store?
 			send();
 		}
 	}
@@ -93,7 +93,7 @@ void UartFifo<rx_size, tx_size>::send()
 	uint8_t* write_ptr = tx_write_ptr;
 	uint8_t* read_ptr = tx_read_ptr;
 	if (read_ptr == write_ptr) return;
-	uint32_t old = __atomic_fetch_or(&busy, 1, __ATOMIC_SEQ_CST);
+	uint32_t old = __atomic_fetch_or(&busy, 1, __ATOMIC_SEQ_CST); // TODO: atomic store??
 	if (old != 0) return;
 	if (read_ptr < write_ptr) {
 		HAL_UART_Transmit_DMA(&uart, read_ptr, write_ptr - read_ptr);

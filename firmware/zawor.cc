@@ -168,12 +168,12 @@ void Zawor::set_relays(int new_direction)
 {
     if (new_direction == 0) {
         Relay::set(relay_on, false);
-        Relay::set(relay_plus, false);
+        Relay::powerOff(relay_plus);
     } else {
         if (new_direction > 0) {
-            Relay::set(relay_plus, !storage.odw_kierunek);
+            Relay::set(relay_plus, true);
         } else {
-            Relay::set(relay_plus, storage.odw_kierunek);
+            Relay::set(relay_plus, false);
         }
         Relay::set(relay_on, true);
     }

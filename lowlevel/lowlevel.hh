@@ -15,6 +15,7 @@ void global_init(); // Initialize low level before calling any other function
 
 // IO
 void output(int index, bool state); // Relays and buzzer
+bool input(int index); // ON/OFF with pull-up
 uint32_t analog_input(int index); // Raw 16-bit value of analog input, converting and validating is done by upper level
 
 // Time

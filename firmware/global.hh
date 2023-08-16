@@ -8,9 +8,9 @@
 #include "lowlevel.hh"
 
 static struct _GlobalInit {
-	_GlobalInit() {
-		global_init();
-	}
+    _GlobalInit() {
+        global_init();
+    }
 } _global_init_call;
 
 #endif

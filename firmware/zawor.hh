@@ -12,7 +12,6 @@ public:
     struct Storage {
         int czas_otwarcia;
         int czas_min_otwarcia;
-        bool odw_kierunek;
     };
 
 private:

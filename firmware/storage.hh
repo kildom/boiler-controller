@@ -3,6 +3,8 @@
 
 #include "global.hh"
 #include "zawor.hh"
+#include "relays.hh"
+#include "temp.hh"
 
 struct Storage {
     uint32_t magic1;
@@ -10,6 +12,20 @@ struct Storage {
     Zawor::Storage zaw_powrotu;
     Zawor::Storage zaw_podl1;
     Zawor::Storage zaw_podl2;
+    Relay::Storage relay;
+    Temp::Storage temp;
+    bool pelletDom;
+    bool pelletCwu;
+    bool elekDom;
+    bool elekCwu;
+    bool elekBezposrPodl;
+    bool podl2;
+    uint32_t elekStartupTime;
+    int cwuTempMin;
+    int cwuTempMax;
+    int cwuTempCritical;
+    int roomMinHeatTimePellet;
+    int roomMinHeatTimeElek;
     uint32_t crc;
     uint32_t magic2;
     static void init();

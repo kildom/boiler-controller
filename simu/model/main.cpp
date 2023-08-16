@@ -97,6 +97,12 @@ void output(int index, bool value)
     }
 }
 
+bool input(int index)
+{
+    return false;
+}
+
+
 uint32_t analog_input(int index)
 {
     double x;
@@ -112,8 +118,8 @@ uint32_t analog_input(int index)
         case 8: x = -50; break;
         default: x = 20; break; // TODO: ASSERT
     }
-    double raw = -0.2655244 * x * x + 139.607 * x + 34124.1915; // KTY81/210 + 1.5K resistor with 16-bit ADC
-    //double raw = -0.19755154254 * x * x + 138.755151256 * x + 27791.13537582; // KTY81/210 + 2.21K resistor with 16-bit ADC
+    //double raw = -0.2655244 * x * x + 139.607 * x + 34124.1915; // KTY81/210 + 1.5K resistor with 16-bit ADC
+    double raw = -0.19755154254 * x * x + 138.755151256 * x + 27791.13537582; // KTY81/210 + 2.21K resistor with 16-bit ADC
     if (raw < 0) return 0;
     if (raw > 65535) return 65535;
     return (uint32_t)(raw + 0.5);

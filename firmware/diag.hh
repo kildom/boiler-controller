@@ -6,16 +6,16 @@
 
 class Diag {
 public:
-	enum Mode {
-		LOG,
-		MENU,
-		COMM,
-	};
+    enum Mode {
+        LOG,
+        MENU,
+        COMM,
+    };
 
-	static void log(const char* text);
-	static void update();
-	static void write(const char* data, int size, Mode requestMode);
-	static void write(uint8_t data, Mode requestMode);
+    static void log(const char* text);
+    static void update();
+    static void write(const char* data, int size, Mode requestMode);
+    static void write(uint8_t data, Mode requestMode);
 };
 
 #endif /* DIAG_HH_ */

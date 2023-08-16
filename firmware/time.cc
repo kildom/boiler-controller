@@ -3,15 +3,13 @@
 #include "deque.hh"
 #include "lowlevel.h"
 
-static const int MIN_UPDATE_INTERVAL = 500;
-
 #define LOW_LEVEL_END ((uint32_t)(1 << TIME_BITS))
 #define LOW_LEVEL_MASK (LOW_LEVEL_END - (uint32_t)1)
 
 uint64_t Time::prev = 0;
 int Time::delta = 0;
 uint64_t Time::time = 0;
-uint64_t Time::scheduled_update = MIN_UPDATE_INTERVAL;
+uint64_t Time::scheduled_update = PERIODIC_TIMEOUT;
 static Deque timers = { .first = nullptr };
 
 uint64_t Time::real_time()
@@ -43,8 +41,7 @@ void Time::update_start()
     auto now = real_time();
     delta = now - time;
     time = now;
-    scheduled_update = now + MIN_UPDATE_INTERVAL;
-    timeout((uint32_t)scheduled_update & LOW_LEVEL_MASK);
+    scheduled_update = now + PERIODIC_TIMEOUT;
 
     auto timer = timers.get_first<Timer>();
     while (timer != nullptr) {

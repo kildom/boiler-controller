@@ -95,12 +95,12 @@ static bool adcFunc(const MenuItem* item, char data)
 	return false;
 }
 
-int get_temp(int x)
+static int get_temp(int x)
 {
 	//return (((312936 * x - 620439185) >> 11) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 12 bits ADC
-	return (((19559 * x - 620439186) >> 15) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 16 bits ADC
+	//return (((19559 * x - 620439186) >> 15) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 16 bits ADC
 	//return (((400989 * x + 99792223 ) >> 12) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 12 bits ADC
-	//return (((25062 * x + 99792227 ) >> 16) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 16 bits ADC
+	return (((25062 * x + 99792227 ) >> 16) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 16 bits ADC
 }
 
 static bool readFunc(const MenuItem* item, char data)

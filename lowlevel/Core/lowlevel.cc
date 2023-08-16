@@ -23,6 +23,8 @@ DiagMode::Type diagMode = DiagMode::LOGS;
 UartFifo<256, 2048> diagUart(hlpuart1, hdma_lpuart1_rx, hdma_lpuart1_tx);
 UartFifo<1024, 2048> commUart(huart2, hdma_usart2_rx, hdma_usart2_tx);
 
+uint32_t sysTickEvent = 0;
+
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
@@ -48,6 +50,8 @@ void timeout(uint32_t t)
 		int32_t diff = t - cnt;
 		if (diff < 1) {
 			t = cnt + 1;
+		} else if (diff > PERIODIC_TIMEOUT) {
+			return;
 		}
 		LL_TIM_OC_SetCompareCH1(htim2.Instance, t);
 		new_cnt = LL_TIM_GetCounter(htim2.Instance);
@@ -189,28 +193,54 @@ void HAL_TIM_OC_DelayElapsedCallback(TIM_HandleTypeDef *htim)
 
 #include "time.hh"
 
-static Timer adcTimer(0);
-static uint16_t adc_values_dma[9];
-uint16_t adc_values[9];
+volatile uint16_t adc_values_dma[9];
+uint32_t adc_values[9];
 volatile bool adc_ready = false;
 
 void handle_adc()
 {
 	for (uint32_t i = 0; i < sizeof(adc_values) / sizeof(adc_values[0]); i++) {
-		adc_values[i] = (uint32_t)adc_values[i] * 15 / 16 + adc_values_dma[i];
+		adc_values[i] = ((uint32_t)adc_values[i] * 15 + 8) / 16 + adc_values_dma[i] * 4096;
 	}
 	auto res = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values_dma, sizeof(adc_values_dma) / sizeof(adc_values_dma[0]));
 	if (res != HAL_OK) {
 		ERR("ADC start error!");
 		// TODO: go to fatal error state
 	}
-	adcTimer.set(125);
+}
+
+
+static int get_temp(int x)
+{
+	//return (((312936 * x - 620439185) >> 11) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 12 bits ADC
+	//return (((19559 * x - 620439186) >> 15) * x - 46488827) >>	15; // KTY81/210 + 1.5K resistor on 16 bits ADC
+	//return (((400989 * x + 99792223 ) >> 12) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 12 bits ADC
+	return (((25062 * x + 99792227 ) >> 16) * x - 336445037) >> 15; // KTY81/210 + 2.21K resistor on 16 bits ADC
+}
+
+#include "diag.hh"
+
+void show_adc()
+{
+	static char buf[148];
+	static char buf2[128];
+	uint32_t raw = (uint32_t)adc_values_dma[8] * 16;
+	uint32_t avg = adc_values[8] / 4096;
+	auto r = get_temp(raw);
+	auto t = get_temp(avg);
+	memset(buf2, ' ', 100);
+	buf2[100] = 0;
+	buf2[(uint32_t)r % 100] = '.';
+	buf2[(uint32_t)t % 100] = 'o';
+	if (r == t) buf2[t % 100] = '#';
+	sprintf(buf, "%d %d %d %d |%s|\r\n", raw, r, avg, t, buf2);
+	Diag::write(buf, -1, Diag::MENU);
 }
 
 uint32_t analog_input(int index)
 {
 	// TODO: ASSERT(index < sizeof(adc_values) / sizeof(adc_values[0]))
-	return adc_values[index];
+	return adc_values[index] / 4096;
 }
 
 extern "C"
@@ -258,19 +288,20 @@ void main_loop()
 	__WFE();
 	HAL_GPIO_WritePin(LED_RED_GPIO_Port, LED_RED_Pin, GPIO_PIN_SET);
 
+	auto oldSysTickEvent = __atomic_exchange_n(&sysTickEvent, 0, __ATOMIC_SEQ_CST);
+
 	// The timeout event
-	if (LL_TIM_IsActiveFlag_CC1(htim2.Instance) || timerCaptured) {
+	if (LL_TIM_IsActiveFlag_CC1(htim2.Instance) || timerCaptured || oldSysTickEvent) {
 		LL_TIM_ClearFlag_CC1(htim2.Instance);
 		timerCaptured = false;
-		// Set temporary timeout to 1 sec.
-		LL_TIM_OC_SetCompareCH1(htim2.Instance, LL_TIM_GetCounter(htim2.Instance) + 2000);
 		// Call timeout callback.
 		timeout_event();
 	}
 
 	handle_uart_events();
 
-	if (adcTimer.ready()) {
+	if (oldSysTickEvent) {
+		show_adc();
 		handle_adc();
 	}
 

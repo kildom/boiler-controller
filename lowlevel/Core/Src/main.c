@@ -95,7 +95,8 @@ void global_init()
 }
 
 extern volatile bool adc_ready;
-extern uint16_t adc_values[9];
+extern volatile uint16_t adc_values_dma[9];
+extern uint32_t adc_values[9];
 
 /* USER CODE END 0 */
 
@@ -153,9 +154,13 @@ int main(void)
 
   HAL_ADCEx_Calibration_Start(&hadc1, ADC_SINGLE_ENDED);
 
-  HAL_StatusTypeDef res = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values, sizeof(adc_values) / sizeof(adc_values[0]));
-  while (res != HAL_OK); // TODO: go to fatal error state
-  while (!adc_ready);
+  HAL_StatusTypeDef res = HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_values_dma, sizeof(adc_values_dma) / sizeof(adc_values_dma[0]));
+  while (res != HAL_OK) {} // TODO: go to fatal error state
+  while (!adc_ready) {}
+
+	for (uint32_t i = 0; i < sizeof(adc_values) / sizeof(adc_values[0]); i++) {
+		adc_values[i] = adc_values_dma[i] * 16 * 4096;
+	}
 
   //HAL_SuspendTick();
   HAL_SetTickFreq(HAL_TICK_FREQ_10HZ);

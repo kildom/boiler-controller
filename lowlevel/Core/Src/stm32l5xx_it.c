@@ -193,7 +193,8 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+  extern uint32_t sysTickEvent;
+  __atomic_store_n(&sysTickEvent, 1, __ATOMIC_SEQ_CST);
   /* USER CODE END SysTick_IRQn 1 */
 }
 

@@ -21,7 +21,8 @@ uint32_t analog_input(int index); // Raw 16-bit value of analog input, convertin
 
 // Time
 uint32_t get_time(); // Absolute from startup, upper level is responsible for converting to 64-bits and overflow handling
-void timeout(uint32_t t); // Absolute time, just one timeout at a time (upper level is responsible for timeout queue)
+void timeout(uint32_t t); // Absolute time, just one timeout at a time. Upper level is responsible for timeout queue.
+#define PERIODIC_TIMEOUT 100 // Lower level will do timeouts in 10Hz interval independent from above function.
 
 // Persistent data
 void store_read(int slot, uint8_t* buffer, int size);

@@ -20,7 +20,7 @@ struct Storage {
     bool elekCwu;
     bool elekBezposrPodl;
     bool podl2;
-    uint32_t elekStartupTime;
+    int elekStartupTime;
     int cwuTempMin;
     int cwuTempMax;
     int cwuTempCritical;
@@ -28,6 +28,11 @@ struct Storage {
     int roomMinHeatTimeElek;
     uint32_t crc;
     uint32_t magic2;
+    uint32_t _persistent_end;
+    // ---------------- Non-permanent data
+    uint64_t time;
+    uint64_t roomHeatEnd;
+    bool cwuHeatState;
     static void init();
     static void write();
     static void update();

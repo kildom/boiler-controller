@@ -4,11 +4,32 @@
         "array": "c",
         "string": "c",
         "string_view": "c",
-        "log.h": "c"
+        "log.h": "c",
+        "system_error": "cpp",
+        "functional": "cpp",
+        "tuple": "cpp",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "cmath": "cpp",
+        "limits": "cpp",
+        "new": "cpp",
+        "*.tcc": "cpp",
+        "memory": "cpp",
+        "ostream": "cpp",
+        "numeric": "cpp",
+        "streambuf": "cpp"
     },
+    "editor.tabSize": 4,
+    "editor.detectIndentation": false,
+    "editor.insertSpaces": true,
     "cSpell.words": [
+        "Bezposr",
         "czas",
+        "elek",
         "otwarcia",
+        "Podl",
         "ZAWOR"
     ]
 }

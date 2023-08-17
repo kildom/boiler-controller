@@ -1,58 +1,228 @@
 
+#include <limits>
+
+#include "utils.hh"
 #include "menu.hh"
 #include "diag.hh"
 #include "relays.hh"
 #include "storage.hh"
+#include "inputs.hh"
 
 static const int MAX_LINE_LEN = 128;
 
 static char line[MAX_LINE_LEN];
 static int lineIndex = 0;
 
+struct MenuItem;
+
+struct MenuItemCallbacks {
+    bool (*action)(const MenuItem* item, char data);
+    const char* (*text)(const MenuItem* item);
+};
+
 struct MenuItem {
     const char* name;
-    bool (*func)(const MenuItem* item, char data);
+    const MenuItemCallbacks* callbacks;
     const void* sub;
-    const char* (*nameFunc)(const MenuItem* item);
 };
 
 static void showMenu();
 static void showPath();
 static bool menuFunc(const MenuItem* item, char data);
 
+
+// menu item handler
+
+static const MenuItemCallbacks menuCbk = { menuFunc };
+
+
+// null item handler
+
 static bool nullFunc(const MenuItem* item, char data)
 {
     return false;
 }
 
-static bool boolFunc(const MenuItem* item, char data)
+static const MenuItemCallbacks nullCbk = { nullFunc };
+
+
+// generic bool item handler
+
+struct BoolCallbacks {
+    MenuItemCallbacks base;
+    bool (*read)(const MenuItem* item);
+    void (*write)(const MenuItem* item, bool value);
+};
+
+static bool boolGenericFunc(const MenuItem* item, char data)
 {
-    bool* value = (bool*)item->sub;
-    *value = !*value;
+    auto callbacks = containerOf(item->callbacks, BoolCallbacks::base);
+    callbacks->write(item, !callbacks->read(item));
     return false;
 }
 
-static const char* boolText(const MenuItem* item)
+static const char* boolGenericText(const MenuItem* item)
 {
-    bool* value = (bool*)item->sub;
-    return *value ? ": 1" : ": 0";
+    auto callbacks = containerOf(item->callbacks, BoolCallbacks::base);
+    return callbacks->read(item) ? ": 1" : ": 0";
 }
 
 
-static bool inputIntFunc(const MenuItem* item, char data, int& value)
+// bool item handler
+
+static bool boolRead(const MenuItem* item)
 {
-    if (data == 0) {
-        sprintf(line, "%d", value);
-        lineIndex = strlen(line);
-        showPath();
-        Diag::write(line, lineIndex, Diag::MENU);
-        return true;
-    } else if (data == '\r' || data == '\n') {
+    return *(bool*)item->sub;
+}
+
+static void boolWrite(const MenuItem* item, bool value)
+{
+    *(bool*)item->sub = value;
+}
+
+static const BoolCallbacks boolCbk = {
+    { boolGenericFunc, boolGenericText, }, boolRead, boolWrite,
+};
+
+
+// generic int item handler
+
+template<typename T>
+struct IntCallbacks {
+    enum Kind {
+        INT,
+        TEMP,
+        TIME,
+    };
+    MenuItemCallbacks base;
+    T (*read)(const MenuItem* item);
+    bool (*write)(const MenuItem* item, T value);
+    Kind kind;
+};
+
+static const char* tempToStr(char* dest, int temp)
+{
+    if (temp == Temp::INVALID) return "BŁĄD";
+    return dest + sprintf(dest, "%d.%02d", temp / 100, abs(temp) % 100);
+}
+
+static int tempFromStr(const char* text)
+{
+    char* endptr;
+    auto i = strtol(text, &endptr, 10);
+    auto f = 0;
+    if (endptr[0] == '.' || endptr[0] == ',') {
+        char* endptr2;
+        f = strtol(&endptr[1], &endptr2, 10);
+        int digits = endptr2 - endptr - 1;
+        while (digits < 2) {
+            f *= 10;
+            digits++;
+        }
+        while (digits > 2) {
+            f = (f + 5) / 10;
+            digits--;
+        }
+    }
+    if (i < 0) f = -f;
+    return i * 100 + f;
+}
+
+static const char* timeToStr(char* dest, int t)
+{
+    int n;
+    auto tt = t / 1000;
+    auto ms = t % 1000;
+    if (tt < 60 * 60) {
+        auto sec = tt % 60;
+        tt /= 60;
+        n = sprintf(dest, "%d:%02d", tt, sec);
+    } else {
+        auto sec = tt % 60;
+        tt /= 60;
+        auto min = tt % 60;
+        tt /= 60;
+        n = sprintf(dest, "%d:%02d:%02d", tt, min, sec);
+    }
+    if (ms != 0) {
+        n += sprintf(&dest[n], ".%03d", ms);
+    }
+    return dest + n;
+}
+
+static int timeFromStr(const char* text)
+{
+    char* ptr = (char*)text;
+    int time = 0;
+    do {
+        auto i = strtol(ptr, &ptr, 10);
+        time *= 60;
+        time += i;
+        if (*ptr == ':') {
+            ptr++;
+            continue;
+        } else if (*ptr == '.') {
+            ptr++;
+            break;
+        } else {
+            return time * 1000;
+        }
+    } while (true);
+    char* endptr;
+    auto ms = strtol(ptr, &endptr, 10);
+    int digits = endptr - ptr;
+    while (digits < 3) {
+        ms *= 10;
+        digits++;
+    }
+    while (digits > 3) {
+        ms = (ms + 5) / 10;
+        digits--;
+    }
+    return time * 1000 + ms;
+}
+
+
+template<typename T>
+static bool intGenericFunc(const MenuItem* item, char data)
+{
+    IntCallbacks<T>* callbacks = containerOf(item->callbacks, IntCallbacks<T>::base);
+
+    if (data == '\r' || data == '\n') {
         if (lineIndex == 0) return false;
         line[lineIndex] = 0;
-        value = atoi(line);
-        return false;
-    } else if (data >= 32 && data < 127 && lineIndex < MAX_LINE_LEN - 1) {
+        int value;
+        switch (callbacks->kind)
+        {
+            case IntCallbacks<T>::TEMP: value = tempFromStr(line); break;
+            case IntCallbacks<T>::TIME: value = timeFromStr(line); break;
+            default: value = atoi(line); break;
+        }
+        bool ok = value <= (int)std::numeric_limits<T>::max() && value >= (int)std::numeric_limits<T>::min();
+        ok = ok && callbacks->write(item, (T)value);
+        if (ok) return false;
+        Diag::write("\r\nNieprawidłowa wartość!", -1, Diag::MENU);
+        data = 0;
+        // Fall back to the beginning
+    }
+
+    if (data == 0) {
+        showPath();
+        switch (callbacks->kind)
+        {
+            case IntCallbacks<T>::TEMP: tempToStr(line, (int)callbacks->read(item)); break;
+            case IntCallbacks<T>::TIME: timeToStr(line, (int)callbacks->read(item)); break;
+            default: sprintf(line, "%d", (int)callbacks->read(item)); break;
+        }
+        lineIndex = strlen(line);
+        Diag::write(line, lineIndex, Diag::MENU);
+        return true;
+    } else if (lineIndex < MAX_LINE_LEN - 1 && (
+            (data >= '0' && data <= '9') ||
+            (data == '-' && lineIndex == 0 && callbacks->kind != IntCallbacks<T>::TIME) ||
+            (data == ':' && callbacks->kind == IntCallbacks<T>::TIME) ||
+            (data == '.' && callbacks->kind != IntCallbacks<T>::INT)
+            )) {
         line[lineIndex++] = data;
         Diag::write(data, Diag::MENU);
         return true;
@@ -65,79 +235,117 @@ static bool inputIntFunc(const MenuItem* item, char data, int& value)
     }
 }
 
-static bool relayToggleFunc(const MenuItem* item, char data)
+template<typename T>
+static const char* intGenericText(const MenuItem* item)
 {
-    auto i = (Relay::Index)(int)item->sub;
-    Relay::set(i, !Relay::get(i));
-    return false;
-}
-
-static const char* relayValueText(const MenuItem* item)
-{
-    auto i = (Relay::Index)(int)item->sub;
-    return Relay::get(i) ? "1" : "0";
-}
-
-static bool relayAssignFunc(const MenuItem* item, char data)
-{
-    static int value;
-    auto i = (int)item->sub;
-    if (data == 0) value = storage->relay.map[i];
-    bool active = inputIntFunc(item, data, value);
-    if (!active && value >= 0 && value < 16) storage->relay.map[i] = value;
-    return active;
-}
-
-static const char* relayAssignText(const MenuItem* item)
-{
-    auto i = (int)item->sub;
-    sprintf(line, "%d", storage->relay.map[i]);
-    return line;
-}
-
-static bool relayInvertFunc(const MenuItem* item, char data)
-{
-    auto i = (int)item->sub;
-    int bit = (1 << i);
-    storage->relay.invert ^= bit;
-    return false;
-}
-
-static const char* relayInvertText(const MenuItem* item)
-{
-    auto i = (int)item->sub;
-    return (storage->relay.invert & (1 << i)) ? "ODWR." : "-";
-}
-
-static const char* analogValueText(const MenuItem* item)
-{
-    auto i = (Temp::Index)(int)item->sub;
-    auto x = Temp::get(i);
-    if (x == Temp::INVALID) {
-        return "BŁĄD!!!";
-    } else {
-        sprintf(line, "%d.%02d", x / 100, abs(x) % 100);
+    auto callbacks = containerOf(item->callbacks, IntCallbacks<T>::base);
+    strcpy(line, ": ");
+    switch (callbacks->kind)
+    {
+        case IntCallbacks<T>::TEMP: tempToStr(&line[2], (int)callbacks->read(item)); break;
+        case IntCallbacks<T>::TIME: timeToStr(&line[2], (int)callbacks->read(item)); break;
+        default: sprintf(&line[2], "%d", (int)callbacks->read(item)); break;
     }
     return line;
 }
 
 
-static bool analogAssignFunc(const MenuItem* item, char data)
+// int item handler
+
+template<typename T>
+struct IntItemInfo {
+    T* ptr;
+    T max;
+    T min;
+};
+
+template<typename T>
+static T intRead(const MenuItem* item)
 {
-    static int value;
-    auto i = (int)item->sub;
-    if (data == 0) value = storage->temp.map[i];
-    bool active = inputIntFunc(item, data, value);
-    if (!active && value >= 0 && value < 9) storage->temp.map[i] = value; // TODO: define with analog inputs count
-    return active;
+    return *((IntItemInfo<T>*)item->sub)->ptr;
 }
 
-static const char* analogAssignText(const MenuItem* item)
+template<typename T>
+static bool intWrite(const MenuItem* item, T value)
 {
-    auto i = (int)item->sub;
-    sprintf(line, "%d", storage->temp.map[i]);
+    auto& info = *(IntItemInfo<T>*)item->sub;
+    if (value < info.min || value > info.max) return false;
+    *info.ptr = value;
+    return true;
+}
+
+template<typename T>
+static const IntCallbacks<T> intCbk = {
+    { intGenericFunc<T>, intGenericText<T> }, intRead<T>, intWrite<T>, IntCallbacks<T>::INT,
+};
+
+static const IntCallbacks<int> tempCbk = {
+    { intGenericFunc<int>, intGenericText<int> }, intRead<int>, intWrite<int>, IntCallbacks<int>::TEMP,
+};
+
+static const IntCallbacks<int> timeCbk = {
+    { intGenericFunc<int>, intGenericText<int> }, intRead<int>, intWrite<int>, IntCallbacks<int>::TIME,
+};
+
+
+// analog input item handler
+
+static const char* tempInputText(const MenuItem* item)
+{
+    auto i = (Temp::Index)(int)item->sub;
+    strcpy(line, ": ");
+    tempToStr(&line[2], Temp::get(i));
     return line;
 }
+
+static const MenuItemCallbacks tempInputCbk = {
+    nullFunc, tempInputText,
+};
+
+
+// relay toggle item handler
+
+static bool relayToggleRead(const MenuItem* item)
+{
+    auto i = (Relay::Index)(int)item->sub;
+    return Relay::get(i);
+}
+
+static void relayToggleWrite(const MenuItem* item, bool value)
+{
+    auto i = (Relay::Index)(int)item->sub;
+    Relay::set(i, value);
+}
+
+static const BoolCallbacks relayToggleCbk = {
+    { boolGenericFunc, boolGenericText, }, relayToggleRead, relayToggleWrite,
+};
+
+
+// relay invert item handler
+
+static bool relayInvertRead(const MenuItem* item)
+{
+    auto i = (int)item->sub;
+    return storage->relay.invert & (1 << i) ? true : false;
+}
+
+static void relayInvertWrite(const MenuItem* item, bool value)
+{
+    auto i = (int)item->sub;
+    if (value) {
+        storage->relay.invert |= (1 << i);
+    } else {
+        storage->relay.invert &= ~(1 << i);
+    }
+}
+
+static const BoolCallbacks relayInvertCbk = {
+    { boolGenericFunc, boolGenericText, }, relayInvertRead, relayInvertWrite,
+};
+
+
+// specialized item handlers
 
 static bool saveStorageFunc(const MenuItem* item, char data)
 {
@@ -145,130 +353,117 @@ static bool saveStorageFunc(const MenuItem* item, char data)
     return false;
 }
 
-static bool tempFunc(const MenuItem* item, char data)
-{
-    int* value = (int*)item->sub;
-    if (data == 0) {
-        sprintf(line, "%d.%02d", *value / 100, abs(*value) % 100);
-        lineIndex = strlen(line);
-        showPath();
-        Diag::write(line, lineIndex, Diag::MENU);
-        return true;
-    } else if (data == '\r' || data == '\n') {
-        if (lineIndex == 0) return false;
-        line[lineIndex] = 0;
-        value = atoi(line);
-        return false;
-    } else if (data >= 32 && data < 127 && lineIndex < MAX_LINE_LEN - 1) {
-        line[lineIndex++] = data;
-        Diag::write(data, Diag::MENU);
-        return true;
-    } else if (((data == 8) || (data == 127)) && lineIndex > 0) {
-        Diag::write("\x08 \x08", 3, Diag::MENU);
-        lineIndex--;
-        return true;
-    } else {
-        return true;
-    }
-    bool active = inputIntFunc(item, data, *value);
-    if (!active && *value >= 0 && *value < 9) storage->temp.map[i] = value; // TODO: define with analog inputs count
-    return active;
-}
 
-static const char* tempText(const MenuItem* item)
-{
-    int* value = (int*)item->sub;
-    sprintf(line, "%d.%02d", *value / 100, abs(*value) % 100);
-    return line;
-}
+// The menu
 
 static const MenuItem rootList[] = {
-    { "Tryby", menuFunc, (MenuItem[]){
-        { "Pellet C.O.", boolFunc, &Storage::storage.pelletDom, boolText },
-        { "Pellet C.W.U.", boolFunc, &Storage::storage.pelletCwu, boolText },
-        { "Elekt. C.O.", boolFunc, &Storage::storage.elekDom, boolText },
-        { "Elekt. C.W.U.", boolFunc, &Storage::storage.elekCwu, boolText },
-        { "Elekt. bez zaw. podl.", boolFunc, &Storage::storage.elekBezposrPodl, boolText },
+    { "Tryby", &menuCbk, (const MenuItem[]){
+        { "Pellet C.O.", &boolCbk.base, &Storage::storage.pelletDom },
+        { "Pellet C.W.U.", &boolCbk.base, &Storage::storage.pelletCwu },
+        { "Elekt. C.O.", &boolCbk.base, &Storage::storage.elekDom },
+        { "Elekt. C.W.U.", &boolCbk.base, &Storage::storage.elekCwu },
+        { "Elekt. bez zaw. podl.", &boolCbk.base, &Storage::storage.elekBezposrPodl },
         {}}},
-    { "Praca ręczna", menuFunc, (MenuItem[]){
-        { "Przełącz wyjście", menuFunc, (MenuItem[]){
-            { "paliwo: ", relayToggleFunc, (void*)0, relayValueText },
-            { "piec: ", relayToggleFunc, (void*)1, relayValueText },
-            { "elek: ", relayToggleFunc, (void*)2, relayValueText },
-            { "pompa_powr: ", relayToggleFunc, (void*)3, relayValueText },
-            { "zaw_powr: ", relayToggleFunc, (void*)4, relayValueText },
-            { "zaw_powr_plus: ", relayToggleFunc, (void*)5, relayValueText },
-            { "zaw_podl1: ", relayToggleFunc, (void*)6, relayValueText },
-            { "zaw_podl1_plus: ", relayToggleFunc, (void*)7, relayValueText },
-            { "pompa_podl1: ", relayToggleFunc, (void*)8, relayValueText },
-            { "zaw_podl2: ", relayToggleFunc, (void*)9, relayValueText },
-            { "zaw_podl2_plus: ", relayToggleFunc, (void*)10, relayValueText },
-            { "pompa_podl2: ", relayToggleFunc, (void*)11, relayValueText },
-            { "pompa_cwu: ", relayToggleFunc, (void*)12, relayValueText },
-            { "buzzer: ", relayToggleFunc, (void*)13, relayValueText },
+    { "Praca ręczna", &menuCbk, (const MenuItem[]){
+        { "Przełącz wyjście", &menuCbk, (const MenuItem[]){
+            { "paliwo", &relayToggleCbk.base, (void*)0 },
+            { "piec", &relayToggleCbk.base, (void*)1 },
+            { "elek", &relayToggleCbk.base, (void*)2 },
+            { "pompa_powr", &relayToggleCbk.base, (void*)3 },
+            { "zaw_powr", &relayToggleCbk.base, (void*)4 },
+            { "zaw_powr_plus", &relayToggleCbk.base, (void*)5 },
+            { "zaw_podl1", &relayToggleCbk.base, (void*)6 },
+            { "zaw_podl1_plus", &relayToggleCbk.base, (void*)7 },
+            { "pompa_podl1", &relayToggleCbk.base, (void*)8 },
+            { "zaw_podl2", &relayToggleCbk.base, (void*)9 },
+            { "zaw_podl2_plus", &relayToggleCbk.base, (void*)10 },
+            { "pompa_podl2", &relayToggleCbk.base, (void*)11 },
+            { "pompa_cwu", &relayToggleCbk.base, (void*)12 },
+            { "buzzer", &relayToggleCbk.base, (void*)13 },
             {}}},
-        { "Podgląd wejścia", menuFunc, (MenuItem[]){
-            { "piec_pelet: ", nullFunc, (void*)0, analogValueText },
-            { "piec_powrot: ", nullFunc, (void*)1, analogValueText },
-            { "piec_elek: ", nullFunc, (void*)2, analogValueText },
-            { "podl1: ", nullFunc, (void*)3, analogValueText },
-            { "podl2: ", nullFunc, (void*)4, analogValueText },
-            { "cwu: ", nullFunc, (void*)5, analogValueText },
+        { "Podgląd wejścia", &menuCbk, (const MenuItem[]){
+            { "piec_pelet", &tempInputCbk, (void*)0 },
+            { "piec_powrot", &tempInputCbk, (void*)1 },
+            { "piec_elek", &tempInputCbk, (void*)2 },
+            { "podl1", &tempInputCbk, (void*)3 },
+            { "podl2", &tempInputCbk, (void*)4 },
+            { "cwu", &tempInputCbk, (void*)5 },
             {}}},
         {}}},
-    { "Konfiguracja", menuFunc, (MenuItem[]){
-        { "Przypisz wyjścia", menuFunc, (MenuItem[]){
-            { "paliwo: ", relayAssignFunc, (void*)0, relayAssignText },
-            { "piec: ", relayAssignFunc, (void*)1, relayAssignText },
-            { "elek: ", relayAssignFunc, (void*)2, relayAssignText },
-            { "pompa_powr: ", relayAssignFunc, (void*)3, relayAssignText },
-            { "zaw_powr: ", relayAssignFunc, (void*)4, relayAssignText },
-            { "zaw_powr_plus: ", relayAssignFunc, (void*)5, relayAssignText },
-            { "zaw_podl1: ", relayAssignFunc, (void*)6, relayAssignText },
-            { "zaw_podl1_plus: ", relayAssignFunc, (void*)7, relayAssignText },
-            { "pompa_podl1: ", relayAssignFunc, (void*)8, relayAssignText },
-            { "zaw_podl2: ", relayAssignFunc, (void*)9, relayAssignText },
-            { "zaw_podl2_plus: ", relayAssignFunc, (void*)10, relayAssignText },
-            { "pompa_podl2: ", relayAssignFunc, (void*)11, relayAssignText },
-            { "pompa_cwu: ", relayAssignFunc, (void*)12, relayAssignText },
-            { "buzzer: ", relayAssignFunc, (void*)13, relayAssignText },
+    { "Konfiguracja", &menuCbk, (const MenuItem[]){
+        { "Przypisz wyjścia", &menuCbk, (const MenuItem[]){
+            { "paliwo", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[0], 16 }}},
+            { "piec", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[1], 16 }}},
+            { "elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[2], 16 }}},
+            { "pompa_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[3], 16 }}},
+            { "zaw_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[4], 16 }}},
+            { "zaw_powr_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[5], 16 }}},
+            { "zaw_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[6], 16 }}},
+            { "zaw_podl1_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[7], 16 }}},
+            { "pompa_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[8], 16 }}},
+            { "zaw_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[9], 16 }}},
+            { "zaw_podl2_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[10], 16 }}},
+            { "pompa_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[11], 16 }}},
+            { "pompa_cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[12], 16 }}},
+            { "buzzer", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[13], 16 }}},
             {}}},
-        { "Odwróć wyjścia", menuFunc, (MenuItem[]){
-            { "paliwo: ", relayInvertFunc, (void*)0, relayInvertText },
-            { "piec: ", relayInvertFunc, (void*)1, relayInvertText },
-            { "elek: ", relayInvertFunc, (void*)2, relayInvertText },
-            { "pompa_powr: ", relayInvertFunc, (void*)3, relayInvertText },
-            { "zaw_powr: ", relayInvertFunc, (void*)4, relayInvertText },
-            { "zaw_powr_plus: ", relayInvertFunc, (void*)5, relayInvertText },
-            { "zaw_podl1: ", relayInvertFunc, (void*)6, relayInvertText },
-            { "zaw_podl1_plus: ", relayInvertFunc, (void*)7, relayInvertText },
-            { "pompa_podl1: ", relayInvertFunc, (void*)8, relayInvertText },
-            { "zaw_podl2: ", relayInvertFunc, (void*)9, relayInvertText },
-            { "zaw_podl2_plus: ", relayInvertFunc, (void*)10, relayInvertText },
-            { "pompa_podl2: ", relayInvertFunc, (void*)11, relayInvertText },
-            { "pompa_cwu: ", relayInvertFunc, (void*)12, relayInvertText },
-            { "brzeczyk: ", relayInvertFunc, (void*)13, relayInvertText },
+        { "Odwróć wyjścia", &menuCbk, (const MenuItem[]){
+            { "paliwo", &relayInvertCbk.base, (void*)0 },
+            { "piec", &relayInvertCbk.base, (void*)1 },
+            { "elek", &relayInvertCbk.base, (void*)2 },
+            { "pompa_powr", &relayInvertCbk.base, (void*)3 },
+            { "zaw_powr", &relayInvertCbk.base, (void*)4 },
+            { "zaw_powr_plus", &relayInvertCbk.base, (void*)5 },
+            { "zaw_podl1", &relayInvertCbk.base, (void*)6 },
+            { "zaw_podl1_plus", &relayInvertCbk.base, (void*)7 },
+            { "pompa_podl1", &relayInvertCbk.base, (void*)8 },
+            { "zaw_podl2", &relayInvertCbk.base, (void*)9 },
+            { "zaw_podl2_plus", &relayInvertCbk.base, (void*)10 },
+            { "pompa_podl2", &relayInvertCbk.base, (void*)11 },
+            { "pompa_cwu", &relayInvertCbk.base, (void*)12 },
+            { "brzeczyk", &relayInvertCbk.base, (void*)13 },
             {}}},
-        { "Przypisz wejścia", menuFunc, (MenuItem[]){
-            { "piec_pelet: ", analogAssignFunc, (void*)0, analogAssignText },
-            { "piec_powrot: ", analogAssignFunc, (void*)1, analogAssignText },
-            { "piec_elek: ", analogAssignFunc, (void*)2, analogAssignText },
-            { "podl1: ", analogAssignFunc, (void*)3, analogAssignText },
-            { "podl2: ", analogAssignFunc, (void*)4, analogAssignText },
-            { "cwu: ", analogAssignFunc, (void*)5, analogAssignText },
+        { "Przypisz wejścia", &menuCbk, (const MenuItem[]){
+            { "piec_pelet", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[0], 8 }}},
+            { "piec_powrot", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[1], 8 }}},
+            { "piec_elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[2], 8 }}},
+            { "podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[3], 8 }}},
+            { "podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[4], 8 }}},
+            { "cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[5], 8 }}},
             {}}},
-        { "Temperatury", menuFunc, (MenuItem[]){
-            { "cwuTempMin", tempFunc, &Storage::storage.cwuTempMin, tempText },
-            { "cwuTempMax", tempFunc, &Storage::storage.cwuTempMax, tempText },
-            { "cwuTempCritical", tempFunc, &Storage::storage.cwuTempCritical, tempText },
+        { "Temperatury", &menuCbk, (const MenuItem[]){
+            { "cwuTempMin", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.cwuTempMin, 6000 }}},
+            { "cwuTempMax", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.cwuTempMax, 6500 }}},
+            { "cwuTempCritical", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.cwuTempCritical, 8000 }}},
             {}}},
-        { "Załącz drugą podl.", boolFunc, &Storage::storage.podl2, boolText },
+        { "Zawory", &menuCbk, (const MenuItem[]){
+            { "Powrotu", &menuCbk, (const MenuItem[]){
+                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_powrotu.czas_otwarcia, 60 * 60 * 1000 }}},
+                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_powrotu.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                {}}},
+            { "Podłogówki 1", &menuCbk, (const MenuItem[]){
+                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.czas_otwarcia, 60 * 60 * 1000 }}},
+                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                {}}},
+            { "Podłogówki 2", &menuCbk, (const MenuItem[]){
+                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.czas_otwarcia, 60 * 60 * 1000 }}},
+                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                {}}},
+            {}}},
+        { "Elektryczny", &menuCbk, (const MenuItem[]){
+            { "Czas startu", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekStartupTime, 60 * 60 * 1000 }}},
+            { "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.roomMinHeatTimeElek, 24 * 60 * 60 * 1000 }}},
+            {}}},
+        { "Pellet", &menuCbk, (const MenuItem[]){
+            { "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.roomMinHeatTimePellet, 24 * 60 * 60 * 1000 }}},
+            {}}},
+        { "Załącz drugą podl.", &boolCbk.base, &Storage::storage.podl2 },
         {}}},
-    { "Zapisz do pamięci", saveStorageFunc },
+    { "Zapisz do pamięci", (const MenuItemCallbacks[]){{ saveStorageFunc }}},
     {}
 };
 
-static const MenuItem root = { "root", menuFunc, rootList };
+static const MenuItem root = { "root", &menuCbk, rootList };
 
 static const MenuItem* menuStack[20] = { &root };
 static int menuStackLast = 0;
@@ -282,8 +477,8 @@ static void showPath()
     for (int i = 1; i <= menuStackLast; i++) {
         sub = menuStack[i];
         Diag::write(sub->name, -1, Diag::MENU);
-        if (sub->nameFunc) {
-            Diag::write(sub->nameFunc(sub), -1, Diag::MENU);
+        if (sub->callbacks->text) {
+            Diag::write(sub->callbacks->text(sub), -1, Diag::MENU);
         }
         Diag::write(" > ", 3, Diag::MENU);
     }
@@ -292,7 +487,7 @@ static void showPath()
 static void showMenu()
 {
     const MenuItem *sub;
-    if (menuStack[menuStackLast]->func != menuFunc) return;
+    if (menuStack[menuStackLast]->callbacks->action != menuFunc) return;
     sub = (const MenuItem *)menuStack[menuStackLast]->sub;
     char index = '1';
     Diag::write("\r\n------------------------------------------------------\r\n\r\n  ", -1, Diag::MENU);
@@ -300,13 +495,13 @@ static void showMenu()
         Diag::write(index, Diag::MENU);
         Diag::write(". ", -1, Diag::MENU);
         Diag::write(sub->name, -1, Diag::MENU);
-        if (sub->nameFunc) {
-            Diag::write(sub->nameFunc(sub), -1, Diag::MENU);
+        if (sub->callbacks->text) {
+            Diag::write(sub->callbacks->text(sub), -1, Diag::MENU);
         }
-        if (sub->func != menuFunc) {
-            Diag::write("\r\n  ", -1, Diag::MENU);
-        } else {
+        if (sub->callbacks->action == menuFunc) {
             Diag::write(" >>\r\n  ", -1, Diag::MENU);
+        } else {
+            Diag::write("\r\n  ", -1, Diag::MENU);
         }
         sub++;
         index++;
@@ -345,7 +540,7 @@ static bool selectMenu(const MenuItem* item, int selected, char echoChar)
     while (sub->name) {
         if (index == selected) {
             menuStack[++menuStackLast] = sub;
-            return sub->func(sub, 0);
+            return sub->callbacks->action(sub, 0);
         }
         sub++;
         index++;
@@ -374,10 +569,10 @@ static bool menuFunc(const MenuItem* item, char data)
 void Menu::write(uint8_t data)
 {
     const MenuItem* top = menuStack[menuStackLast];
-    bool stay = top->func(top, data);
+    bool stay = top->callbacks->action(top, data);
     if (!stay && menuStackLast > 0) {
         menuStackLast--;
-        menuStack[menuStackLast]->func(menuStack[menuStackLast], 0);
+        menuStack[menuStackLast]->callbacks->action(menuStack[menuStackLast], 0);
     }
     prevChar = data;
 }

@@ -1,6 +1,7 @@
 
 #include "time.hh"
 #include "deque.hh"
+#include "storage.hh"
 #include "lowlevel.hh"
 
 #define LOW_LEVEL_END ((uint32_t)(1 << TIME_BITS))
@@ -41,6 +42,7 @@ void Time::update_start()
     auto now = real_time();
     delta = now - time;
     time = now;
+    storage->time = time;
     scheduled_update = now + PERIODIC_TIMEOUT;
 
     auto timer = timers.get_first<Timer>();

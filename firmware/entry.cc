@@ -94,40 +94,45 @@ static bool selectedElek() {
         && !(emergencyDisable.cwu && emergencyDisable.podl1 && emergencyDisable.podl2);
 }
 
-
-static bool cwuHeatState = false;
-
 static bool cwuHeat() {
     auto cwuTemp = Temp::cwu();
+
     if (cwuTemp == Temp::INVALID) {
-        emergencyDisable.cwu = true;
+        emergencyDisable.cwu = true; // TODO: in function, show ERR if disabled.
+    }
+
+    if (emergencyDisable.cwu) {
         return false;
-    }
-    if (cwuTemp >= storage->cwuTempMax) {
-        cwuHeatState = false;
+    } else if (cwuTemp >= storage->cwuTempMax) {
+        storage->cwuHeatState = false;
     } else if (cwuTemp < storage->cwuTempMin) {
-        cwuHeatState = true;
+        storage->cwuHeatState = true;
     }
-    return cwuHeatState && (storage->elekCwu || storage->pelletCwu);
+
+    return storage->cwuHeatState && (storage->elekCwu || storage->pelletCwu);
 }
 
-static uint64_t roomHeatingStart = Time::NEVER;
 
 static bool roomHeat() {
+    if (emergencyDisable.podl1 && emergencyDisable.podl2) {
+        return false;
+    }
+
     if (Input::heatRoom()) {
-        if (roomHeatingStart == Time::NEVER) {
-            roomHeatingStart = Time::time;
+        if (storage->roomHeatEnd == 0) {
+            uint64_t minTime = selectedPellet() ? storage->roomMinHeatTimePellet : storage->roomMinHeatTimeElek;
+            storage->roomHeatEnd = Time::time + minTime;
+            DBG("Room heat requested for %d min.", (int)minTime / 60000);
         }
         return true;
-    } else {
-        uint64_t minTime = selectedPellet() ? storage->roomMinHeatTimePellet : storage->roomMinHeatTimeElek;
-        if (Time::time > roomHeatingStart + minTime) {
-            roomHeatingStart = Time::NEVER;
-            return false;
-        } else {
-            return true;
-        }
+    } else if (Time::time < storage->roomHeatEnd) {
+        return true;
+    } else if (storage->roomHeatEnd != 0) {
+        DBG("Room heat request stopped.");
+        storage->roomHeatEnd = 0;
     }
+
+    return false;
 }
 
 void stateElekIdle(Stage stage)

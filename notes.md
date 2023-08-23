@@ -32,11 +32,15 @@ Hardware:
   * Current matsure:
     * https://www.tme.eu/pl/details/ppas100/przekladniki-pradowe/talema/as100/
     * https://www.tme.eu/pl/details/ppas105/przekladniki-pradowe/talema/as105/
+  * https://www.tme.eu/pl/details/ds1052-202b2ma2030/kable-wstazkowe-ze-zlaczami-idc/connfly/ds1052-202b2ma203001/
 
 * Relay array
   * https://botland.com.pl/przekazniki-przekazniki-arduino/6940-modul-przekaznikow-16-kanalow-z-optoizolacja-styki-10a250vac-cewka-5v-5904422359911.html
 
-
+* Case
+  * https://allegro.pl/oferta/obudowa-kradex-z95j-12156497710
+  * https://allegro.pl/oferta/z-90j-obudowa-z-tworzywa-225-x-175-x-80-mm-jasna-11970558491
+ 
 Old ideas for GUI:
 * https://botland.com.pl/moduly-nanopi/14635-nanopi-neo-v14-allwinner-h3-quad-core-12ghz-512mb-ram-bez-zlaczy-5904422377656.html
 * https://allegro.pl/oferta/mikrokomputer-orange-pi-zero-512mb-13680197462

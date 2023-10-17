@@ -33,7 +33,7 @@ let memory: WebAssembly.Memory;
 let stateOffset: number;
 let running: boolean;
 let stepsPerSecond: number = 10;
-let state: StateType = {};
+let state: State = {} as State;
 let db: IDBDatabase;
 
 
@@ -44,6 +44,7 @@ async function startSimulation() {
         return;
     }
     try {
+        setState('running', true);
         running = true;
         let lastIterTime = Date.now();
         updateState();
@@ -72,6 +73,8 @@ async function startSimulation() {
         }
     } finally {
         running = false;
+        setState('running', false);
+        updateState();
     }
 }
 
@@ -79,8 +82,12 @@ function stopSimulation() {
     running = false;
 }
 
-function setState(name: string, value: number | boolean) {
+function setState(name: string, value: number | boolean, increase?: boolean) {
     let view = new DataView(memory.buffer, stateOffset);
+    if (increase) {
+        updateState(false);
+        value = state[name] + value;
+    }
     set(view, name, value);
     state[name] = value;
 }
@@ -110,6 +117,12 @@ onmessage = (e: MessageEvent<Message>) => {
             break;
         case 'set-state':
             setState(data.name, data.value);
+            break;
+        case 'inc-state':
+            setState(data.name, data.value, true);
+            break;
+        case 'get-state':
+            updateState();
             break;
         case 'button':
             exports.button(data.index, data.state ? 1 : 0);
@@ -234,6 +247,8 @@ async function loadStorage() {
             } catch (err) { }
             store = db.createObjectStore('storage', { keyPath: 'key' });
             break;
+        default:
+            throw new Error();
     }
     let getReq = store.getAll(IDBKeyRange.bound(0, 1));
     promise = new Promise<any>(r => { resolve = r; });

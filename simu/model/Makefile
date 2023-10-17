@@ -37,7 +37,7 @@ clean:
 $(TARGET): $(OBJ) Makefile
 	mkdir -p $(dir $@)
 	$(CXX) $(LDFLAGS) $(ALLFLAGS) $(OBJ) -o $@
-	npx ts-node build-struct.ts
+	npx ts-node-esm build-struct.ts
 
 $(OBJ_DIR)/%.cpp.o: ../../%.cpp Makefile
 	mkdir -p $(dir $@)

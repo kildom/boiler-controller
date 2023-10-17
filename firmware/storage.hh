@@ -17,15 +17,20 @@ struct Storage {
     bool pelletDom;
     bool pelletCwu;
     bool elekDom;
-    bool elekCwu;
-    bool elekBezposrPodl;
-    bool podl2;
+    //bool elekCwu; - always false
+    //bool elekBezposrPodl; - always true
+    //bool podl2;
     int elekStartupTime;
+    int elekCritical;
+    int elekOffTime;
     int cwuTempMin;
     int cwuTempMax;
     int cwuTempCritical;
     int roomMinHeatTimePellet;
     int roomMinHeatTimeElek;
+    // TODO: Add to menu
+    int podlFaultDelay;
+    int podlFaultPiecTemp;
     uint32_t crc;
     uint32_t magic2;
     uint32_t _persistent_end;

@@ -22,9 +22,10 @@ public:
         uint8_t map[INPUTS_COUNT];
     };
 
-    static inline int piec_pelet() { return get(PIEC_PELET); }
-    static inline int piec_powrot() { return get(PIEC_POWROT); }
-    static inline int piec_elek() { return get(PIEC_ELEK); }
+    // TODO: Maybe cache temperature
+    static inline int piecPelet() { return get(PIEC_PELET); }
+    static inline int piecPowrot() { return get(PIEC_POWROT); }
+    static inline int piecElek() { return get(PIEC_ELEK); }
     static inline int podl1() { return get(PODL1); }
     static inline int podl2() { return get(PODL2); }
     static inline int cwu() { return get(CWU); }

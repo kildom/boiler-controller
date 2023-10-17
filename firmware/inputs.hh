@@ -9,12 +9,14 @@ public:
 
     enum Index {
         HEAT_ROOM = 0,
-        INPUTS_COUNT = 1,
+        PELLET_PODAWANY = 1,
+        INPUTS_COUNT = 2,
     };
 
     static inline int heatRoom() { return get(HEAT_ROOM); }
+    static inline int pelletPodawany() { return get(PELLET_PODAWANY); }
 
-    static int get(Index index) { return input(0); }
+    static int get(Index index) { return input(index); }
 
 };
 

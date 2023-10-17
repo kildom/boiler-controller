@@ -4,7 +4,11 @@
         "outDir": "web",
         "inlineSourceMap": true,
         "inlineSources": true,
-        "moduleResolution": "NodeNext"
+        "moduleResolution": "NodeNext",
+        "module": "NodeNext",
+        "esModuleInterop": true,
+        "strict": true,
+        "noImplicitAny": false
     },
     "include": ["scripts/*.ts"]
 }

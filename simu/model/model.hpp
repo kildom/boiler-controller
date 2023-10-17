@@ -13,6 +13,7 @@ struct State {
     double speed;       // param Prędkość symulacji
     double maxStepSize; // param Maksymalny krok symulacji
     double period;      // param Okres jednego odświerzenia wizualizacji
+    bool running;       // calc  Simulation is running
 
     // Ogólne
     double Time;        // calc  Czas od początku symulacji
@@ -101,9 +102,8 @@ struct State {
     bool   R13;         // out   Relay 13 - buzzer
 
     // Wejścia
-    bool   IN0;         // in    Input 0 - tryb zima
-    bool   IN1;         // in    Input 1 - wybrany kocioł elektryczny
-    bool   IN2;         // in    Input 2 - ster. pokojowy
+    bool   IN0;         // in    Input 0 - ster. pokojowy
+    bool   IN1;         // in    Input 1 - podajnik pelletu
 
     // END STATE
 
@@ -175,20 +175,20 @@ struct State {
         P2v = 1;         // param Przepływ pompy podłogówki 2, gdy pracuje
         Z2 = 0.98;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
         Z2dir = 0;       // mod   Aktualny kierunek zaworu podłogówki 2
-        Twyl1 = 20;       // mod   Temperatura wylewki 1
-        Tdelta1 = 0;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
+        Twyl2 = 20;       // mod   Temperatura wylewki 1
+        Tdelta2 = 0;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
 
         // Podłogówka - wspólne
         PodlA = 1;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-        PodlK = 0.0001;   // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
-        Tpoddelta = 0.0001;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
+        PodlK = 0.0004;   // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
+        Tpoddelta = 0.00007;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
 
         // Dom
         Tdom = 23;         // calc  Temperatura domu
         Tzaddom = 23;      // param Temperatura zadana domu
         Tzewn = -5;        // param Temperatura na zwenątrz
-        Tdomdelta = 0.0005;    // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z wylewką [°C/s / °C]
-        Tzewndelta = 0.00005;   // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z zewnętrzem [°C/s / °C]
+        Tdomdelta = 0.0001;    // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z wylewką [°C/s / °C]
+        Tzewndelta = 0.000023;   // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z zewnętrzem [°C/s / °C]
 
         // CWU
         Twyj3 = 18;       // mod   Wyjście zasobnika CWU
@@ -217,9 +217,8 @@ struct State {
         R13 = 0;         // out   Relay 13 - buzzer
 
         // Wejścia
-        IN0 = 1;         // in    Input 0 - tryb zima
-        IN1 = 0;         // in    Input 1 - wybrany kocioł elektryczny
-        IN2 = 0;         // in    Input 2 - ster. pokojowy
+        IN0 = 0;         // in    Input 0 - ster. pokojowy
+        IN1 = 0;         // in    Input 1 - podajnik pelletu
     }
 
     void step(double time)
@@ -242,7 +241,7 @@ struct State {
         if (P0 * (1.0 - Z0) + P4 > 0.0) {
             Twejspc = (P0 * (1.0 - Z0) * Tpiec + P4 * Tele) / (P0 * (1.0 - Z0) + P4);
         } else {
-            Twejspc = (Tpiec + Tele) / 2.0;
+            Twejspc = Tspz;
         }
 
         Tpodl1 = Z1 * Tspc + (1.0 - Z1) * Twyj1;
@@ -275,7 +274,8 @@ struct State {
         double Tdompodl = (Twyl1 + Twyl2) * 0.5;
         Tdom += (Tdompodl - Tdom) * Tdomdelta * time;
         Tdom -= (Tdom - Tzewn) * Tzewndelta * time;
-        IN2 = Tdom < Tzaddom;
+        IN0 = Tdom < Tzaddom;
+
         Time += time;
     }
 };

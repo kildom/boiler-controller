@@ -19,7 +19,10 @@
         "memory": "cpp",
         "ostream": "cpp",
         "numeric": "cpp",
-        "streambuf": "cpp"
+        "streambuf": "cpp",
+        "atomic": "cpp",
+        "vector": "cpp",
+        "initializer_list": "cpp"
     },
     "editor.tabSize": 4,
     "editor.detectIndentation": false,

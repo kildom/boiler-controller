@@ -1,5 +1,6 @@
 #include "relays.hh"
 #include "time.hh"
+#include "storage.hh"
 #include "zawor.hh"
 #include "log.hh"
 
@@ -39,9 +40,9 @@ void Zawor::full(int new_direction)
 
 bool Zawor::full_done()
 {
-    /* TODO: is needed? bool pos_ok = ((real_pos <= storage.czas_min_otwarcia + SMALL_TIME_MARGIN) && (direction <= 0))
-        || ((real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN) && (direction >= 0));*/
-    return state == IDLE && work_time < LONG_WORK_TIME;
+    bool pos_ok = ((real_pos <= storage.czas_min_otwarcia + SMALL_TIME_MARGIN) && (direction <= 0))
+        || ((real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN) && (direction >= 0));
+    return state == IDLE && (pos_ok || work_time < LONG_WORK_TIME);
 }
 
 void Zawor::ster(int new_direction)
@@ -164,6 +165,11 @@ delay_idle_state_entry:
     return;
 }
 
+bool Zawor::isFull()
+{
+    return real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN;
+}
+
 void Zawor::set_relays(int new_direction)
 {
     if (new_direction == 0) {
@@ -178,3 +184,7 @@ void Zawor::set_relays(int new_direction)
         Relay::set(relay_on, true);
     }
 }
+
+Zawor Zawor::powrotu(::storage->zaw_powrotu, Relay::ZAW_POWR, Relay::ZAW_POWR_PLUS);
+Zawor Zawor::podl1(::storage->zaw_podl1, Relay::ZAW_PODL1, Relay::ZAW_PODL1_PLUS);
+Zawor Zawor::podl2(::storage->zaw_podl2, Relay::ZAW_PODL2, Relay::ZAW_PODL2_PLUS);

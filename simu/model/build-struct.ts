@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "fs";
 import * as path from "path";
-import { StateStruct } from "../scripts/common";
+import { StateStruct } from "../scripts/common.js";
 
 
 const DIR = path.dirname(process.argv[1]);
@@ -50,7 +50,7 @@ function cTypeToTsType(type: 'bool' | 'double') {
 export function buildStruct() {
     getStateStruct();
     let out = '';
-    out += 'import { StateStruct, StateType } from \'./common\';\n\n';
+    out += 'import { StateStruct, StateType } from \'./common.js\';\n\n';
     out += 'export interface State {\n\n';
     for (let group in stateStruct) {
         out += `    // ${group}\n`;
@@ -61,7 +61,7 @@ export function buildStruct() {
         out += '\n';
     }
     out += '};\n\n';
-    out += 'export function get(view: DataView): StateType {\n';
+    out += 'export function get(view: DataView): State {\n';
     out += '    return {\n';
     for (let group in stateStruct) {
         for (let field of stateStruct[group]) {

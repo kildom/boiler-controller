@@ -1,7 +1,7 @@
 
-import { Message, StateStruct, StateType } from './common.js';
+import { Message, StateStruct, StateType, GuiToMain, MainToGui } from './common.js';
 import { ProtoDecoder, ProtoPacket, ProtoType } from './proto.js';
-import { stateStruct } from './struct.js';
+import { State, stateStruct } from './struct.js';
 import * as xterm from 'xterm';
 import * as xtermAddonFit from 'xterm-addon-fit';
 
@@ -10,13 +10,16 @@ declare const Terminal: typeof xterm.Terminal;
 declare const FitAddon: { FitAddon: typeof xtermAddonFit.FitAddon; };
 
 let worker: Worker;
-let term: Terminal;
-let fitAddon: xtermAddonFit.FitAddon;
+let guiWindow: null | GuiToMain = null;
 let textEncoder = new TextEncoder();
 
-function formatTime(element, value) {
+function formatTime(element, value, strip?: boolean) {
     let date = new Date(1000 * value);
-    element.innerHTML = Math.floor(value / 60 / 60 / 24) + ' ' + date.toISOString().split(/[TZ]/, 2)[1];
+    let str = Math.floor(value / 60 / 60 / 24) + ' ' + date.toISOString().split(/[TZ]/, 2)[1];
+    if (strip) {
+        str = str.replace(/(^[0 :]+)|(0+$)/g, '').replace(/\.$/g, '');
+    }
+    element.innerHTML = str;
 }
 function formatTemp1(element, value) { element.innerHTML = (value || 0).toFixed(1); }
 function formatTemp2(element, value) { element.innerHTML = (value || 0).toFixed(2); }
@@ -24,15 +27,18 @@ function formatPercent(element, value) { element.innerHTML = (100 * value).toFix
 function formatPlusMinus(element, value) { element.style.fill = Math.round(1000 * value) == 0 ? 'black' : value < 0 ? 'red' : '#06F' }
 function formatOnOff(element, value) { element.style.fill = Math.round(1000 * value) == 0 ? '#CCC' : '#4F0' }
 
-let state: StateType;
+let state: State;
 
 let stateFormat = {
     Tele: e => formatTemp1(e, state.Tele),
     Tzadele: e => formatTemp1(e, state.Tzadele),
+    running: e => formatOnOff(e, state.running),
+    notrunning: e => formatOnOff(e, !state.running),
+    Speed: e => { state.speed >= 1 ? formatTime(e, state.speed, true) : (e.innerHTML = '1/' + Math.round(1 / state.speed)) },
 
     Tpiec: e => formatTemp1(e, state.Tpiec),
     Tpowr: e => formatTemp1(e, state.Tpowr),
-    Tzadpiec: e => formatTemp1(e, state.Tzadpiec),
+    Tzadpiec: e => formatTemp1(e, state.Tzadele), // TODO: piec
 
     Twejspc: e => formatTemp1(e, state.Twejspc),
     Tspz: e => formatTemp1(e, state.Tspz),
@@ -48,8 +54,10 @@ let stateFormat = {
     Tzas: e => formatTemp1(e, state.Tzas),
 
     Tdom: e => formatTemp2(e, state.Tdom),
-    Tdompodl: e => formatTemp2(e, state.Tdompodl),
+    Tzewn: e => formatTemp2(e, state.Tzewn),
     Tzaddom: e => formatTemp1(e, state.Tzaddom),
+    Twyl1: e => formatTemp2(e, state.Twyl1),
+    Twyl2: e => formatTemp2(e, state.Twyl2),
 
     Z0: e => formatPercent(e, state.Z0),
     Z1: e => formatPercent(e, state.Z1),
@@ -62,10 +70,6 @@ let stateFormat = {
     P2: e => formatOnOff(e, state.P2),
     P3: e => formatOnOff(e, state.P3),
     P4: e => formatOnOff(e, state.P4),
-    WybEle: e => formatOnOff(e, state.WybEle ? 1 : 0),
-    WybPellet: e => formatOnOff(e, state.WybEle ? 0 : 1),
-    TrybLato: e => formatOnOff(e, state.WybZima ? 1 : 0),
-    TrybZima: e => formatOnOff(e, state.WybZima ? 0 : 1),
 
     R0: e => formatOnOff(e, state.R0),
     R1: e => formatOnOff(e, state.R1),
@@ -88,7 +92,7 @@ let stateFormat = {
 }
 
 
-let stateUpdaters = [];
+let stateUpdaters: (() => void)[] = [];
 
 function updateState() {
     for (let updater of stateUpdaters) {
@@ -116,7 +120,7 @@ function updateState() {
 }
 
 function start() {
-    let vis = document.querySelector('#vis');
+    let vis = document.querySelector('#vis') as Element;
 
     let stateKeys = Object.keys(stateFormat);
 
@@ -130,7 +134,7 @@ function start() {
     }
 
     for (let element of vis.querySelectorAll('[id^=data-]')) {
-        let htmlKey = element.getAttribute('id').substring(5).toLocaleLowerCase();
+        let htmlKey = (element.getAttribute('id') as string).substring(5).toLocaleLowerCase();
         let stateKey = stateKeys.find(x => x.toLocaleLowerCase() == htmlKey);
         if (stateKey) {
             const format = stateFormat[stateKey];
@@ -142,7 +146,7 @@ function start() {
 async function updateSVG() {
     let response = await fetch('vis.svg');
     let text = await response.text();
-    document.querySelector('#svg-container').innerHTML = text;
+    (document.querySelector('#svg-container') as Element).innerHTML = text;
     start();
     updateState();
 }
@@ -180,7 +184,7 @@ function createStateTable() {
         }
     }
     out += '</table>';
-    document.querySelector('#state-container').innerHTML = out;
+    (document.querySelector('#state-container') as Element).innerHTML = out;
 
     for (let [groupName, group] of Object.entries(stateStruct)) {
         for (let field of group) {
@@ -193,6 +197,7 @@ function createStateTable() {
                     msg({ type: 'set-state', name: field.name, value: v });
                 });
             }
+            msg({ type: 'get-state' });
         }
     }
 }
@@ -204,7 +209,7 @@ pd.onPacket = (packet: ProtoPacket) => {
             console.error('Invalid packet');
             break;
         case ProtoType.LOG:
-            switch(packet.level) {
+            switch (packet.level) {
                 case 0:
                     console.debug(packet.text);
                     break;
@@ -229,8 +234,6 @@ function workerMessage(e: MessageEvent<Message>) {
             state = data.state;
             createStateTable();
             updateState();
-            buttonControl('#start', () => msg({ type: 'start' }));
-            buttonControl('#stop', () => msg({ type: 'stop' }));
             updateSVG();
             break;
         case 'state':
@@ -241,7 +244,9 @@ function workerMessage(e: MessageEvent<Message>) {
             pd.push(data.buffer);
             break;
         case 'diag':
-            term.write(data.buffer);
+            if (guiWindow) {
+                guiWindow.term.write(data.buffer);
+            }
             break;
     }
 }
@@ -283,17 +288,17 @@ function textControl(selector: string, acceptFunc?: (v: string) => void, validat
 
 function selectControl(selector: string, acceptFunc?: (v: string) => void) {
     let element = document.querySelector(selector) as HTMLSelectElement;
-    element.onchange = (event: Event) => acceptFunc(element.value);
+    element.onchange = (event: Event) => acceptFunc?.(element.value);
 }
 
 function checkControl(selector: string, acceptFunc?: (v: boolean) => void) {
     let element = document.querySelector(selector) as HTMLInputElement;
-    element.onchange = (event: Event) => acceptFunc(element.checked);
+    element.onchange = (event: Event) => acceptFunc?.(element.checked);
 }
 
 function buttonControl(selector: string, acceptFunc?: () => void) {
     let element = document.querySelector(selector) as HTMLInputElement;
-    element.onclick = (event: Event) => acceptFunc();
+    element.onclick = (event: Event) => acceptFunc?.();
 }
 
 function numberInRange(value: string, start: number, end: number) {
@@ -303,30 +308,67 @@ function numberInRange(value: string, start: number, end: number) {
 }
 
 function diagTermInput(value: string) {
-    msg({type: 'diag', buffer: textEncoder.encode(value)});
-}
-
-function initTerm() {
-    let container = document.querySelector<HTMLElement>('#terminal');
-    term = new Terminal();
-    fitAddon = new FitAddon.FitAddon();
-    term.loadAddon(fitAddon);
-    term.onData(diagTermInput);
-    term.open(container);
-    fitAddon.fit();
-    window.addEventListener('resize', () => {
-        fitAddon.fit();
-    });
+    msg({ type: 'diag', buffer: textEncoder.encode(value) });
 }
 
 async function main() {
-    initTerm();
     worker = new Worker('worker.js', { type: 'module' });
     worker.onmessage = workerMessage;
     worker.onerror = (...e) => console.log(...e);
 }
 
-window.onload = () => { main(); };
+window.onload = () => { window.open('gui.html', 'simuGUI', 'popup'); };
+
+(window as any).guiReady = (data: GuiToMain) => {
+    if (guiWindow) {
+        document.location.reload();
+        return null;
+    }
+    guiWindow = data;
+    main();
+    let guiSend: MainToGui = {
+        onDiagTermInput(value) {
+            diagTermInput(value)
+        },
+    };
+    return guiSend;
+}
+
+let windowInterface = {
+    updateSpeed(value: number) {
+        const speeds = [
+            1 / 60, 1 / 30, 1 / 10, 1 / 5, 1 / 2,
+            1, 2, 5, 10, 30, 60,
+            2 * 60, 5 * 60, 10 * 60, 30 * 60, 60 * 60,
+            2 * 60 * 60, 6 * 60 * 60, 12 * 60 * 60, 24 * 60 * 60,
+            2 * 24 * 60 * 60, 4 * 24 * 60 * 60, 7 * 24 * 60 * 60,
+        ];
+        let curr = state.speed;
+        let index = speeds.filter(x => x < curr).length;
+        if (value > 0) {
+            msg({ type: 'set-state', name: 'speed', value: speeds[index < speeds.length - 1 ? index + 1 : index] });
+        } else {
+            msg({ type: 'set-state', name: 'speed', value: speeds[index > 0 ? index - 1 : index] });
+        }
+        msg({ type: 'get-state' });
+    },
+    play() {
+        msg({ type: 'start' });
+    },
+    pause() {
+        msg({ type: 'stop' });
+        msg({ type: 'get-state' });
+    },
+    update(name: string, increase: number) {
+        msg({ type: 'inc-state', name, value: increase });
+        msg({ type: 'get-state' });
+    }
+}
+
+for (let [name, value] of Object.entries(windowInterface)) {
+    window[name] = value;
+}
+
 
 /*
 TODO: parametry wejściowe:

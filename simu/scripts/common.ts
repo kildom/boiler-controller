@@ -1,24 +1,22 @@
+import * as xterm from 'xterm';
+import { State } from './struct.js';
+
+export interface EmptyMsg {
+    type: 'start' | 'stop' | 'get-state',
+};
 
 export interface ReadyMsg {
     type: 'ready',
-    state: StateType,
-};
-
-export interface StartMsg {
-    type: 'start',
-};
-
-export interface StopMsg {
-    type: 'stop',
+    state: State,
 };
 
 export interface StateMsg {
     type: 'state',
-    state: StateType,
+    state: State,
 };
 
 export interface SetStateMsg {
-    type: 'set-state',
+    type: 'set-state' | 'inc-state',
     name: string,
     value: number | boolean,
 };
@@ -34,7 +32,7 @@ export interface CommMsg {
     buffer: Uint8Array,
 };
 
-export type Message = ReadyMsg | StartMsg | StopMsg | StateMsg | SetStateMsg | ButtonMsg | CommMsg;
+export type Message = ReadyMsg | EmptyMsg  | StateMsg | SetStateMsg | ButtonMsg | CommMsg;
 
 export type StateStruct = {
     [group: string]: {
@@ -58,3 +56,14 @@ export class StateBase {
     constructor(public view: DataView) { }
     update(offset: number, size: number) { }
 }
+
+export interface MainToGui {
+    onDiagTermInput(value: string): void;
+}
+
+
+export interface GuiToMain {
+    term: xterm.Terminal
+}
+
+

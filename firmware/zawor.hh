@@ -12,6 +12,7 @@ public:
     struct Storage {
         int czas_otwarcia;
         int czas_min_otwarcia;
+        int critical;
     };
 
 private:
@@ -45,11 +46,17 @@ public:
     bool full_done();
     void ster(int new_direction);
     void update();
+    bool isFull();
+
+    static Zawor powrotu;
+    static Zawor podl1;
+    static Zawor podl2;
 
 private:
 
     void set_relays(int new_direction);
 
 };
+
 
 #endif

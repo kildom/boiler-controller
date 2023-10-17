@@ -99,7 +99,17 @@ void output(int index, bool value)
 
 bool input(int index)
 {
-    return false;
+    switch (index) {
+        case 0:
+            return state.IN0;
+            break;
+        case 1:
+            return state.IN1;
+            break;
+        default:
+            // TODO: fatal error
+            return false;
+    }
 }
 
 

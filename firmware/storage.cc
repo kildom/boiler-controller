@@ -32,14 +32,17 @@ static const Storage storageInit = {
     .zaw_powrotu = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
+        .critical = 8500,
     },
     .zaw_podl1 = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
+        .critical = 4500,
     },
     .zaw_podl2 = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
+        .critical = 4500,
     },
     .relay = {
         .map = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, },
@@ -50,16 +53,20 @@ static const Storage storageInit = {
     },
     .pelletDom = false,
     .pelletCwu = false,
-    .elekDom = false,
-    .elekCwu = false,
-    .elekBezposrPodl = false,
-    .podl2 = true,
+    .elekDom = true, // TODO: set to false
+    //.elekCwu = false,
+    //.elekBezposrPodl = false,
+    //.podl2 = true,
     .elekStartupTime = 4 * 60 * 1000,
+    .elekCritical = 6500,
+    .elekOffTime = 60 * 1000,
     .cwuTempMin = 3500,
     .cwuTempMax = 5000,
     .cwuTempCritical = 6500,
     .roomMinHeatTimePellet = 2 * 60 * 60 * 1000,
     .roomMinHeatTimeElek = 15 * 60 * 1000,
+    .podlFaultDelay = 2 * 60 * 1000,
+    .podlFaultPiecTemp = 6000,
     .crc = 0,
     .magic2 = STORAGE_MAGIC2,
     // ---------------- Non-permanent data

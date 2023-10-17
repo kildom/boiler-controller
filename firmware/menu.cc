@@ -100,10 +100,14 @@ struct IntCallbacks {
     Kind kind;
 };
 
-static const char* tempToStr(char* dest, int temp)
+const char* tempToStr(char* dest, int temp)
 {
-    if (temp == Temp::INVALID) return "BŁĄD";
-    return dest + sprintf(dest, "%d.%02d", temp / 100, abs(temp) % 100);
+    if (temp == Temp::INVALID) {
+        strcpy(dest, "BŁĄD");
+        return dest + strlen("BŁĄD");
+    } else {
+        return dest + sprintf(dest, "%d.%02d", temp / 100, abs(temp) % 100);
+    }
 }
 
 static int tempFromStr(const char* text)
@@ -361,8 +365,8 @@ static const MenuItem rootList[] = {
         { "Pellet C.O.", &boolCbk.base, &Storage::storage.pelletDom },
         { "Pellet C.W.U.", &boolCbk.base, &Storage::storage.pelletCwu },
         { "Elekt. C.O.", &boolCbk.base, &Storage::storage.elekDom },
-        { "Elekt. C.W.U.", &boolCbk.base, &Storage::storage.elekCwu },
-        { "Elekt. bez zaw. podl.", &boolCbk.base, &Storage::storage.elekBezposrPodl },
+        //{ "Elekt. C.W.U.", &boolCbk.base, &Storage::storage.elekCwu },
+        //{ "Elekt. bez zaw. podl.", &boolCbk.base, &Storage::storage.elekBezposrPodl },
         {}}},
     { "Praca ręczna", &menuCbk, (const MenuItem[]){
         { "Przełącz wyjście", &menuCbk, (const MenuItem[]){
@@ -444,20 +448,24 @@ static const MenuItem rootList[] = {
             { "Podłogówki 1", &menuCbk, (const MenuItem[]){
                 { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.czas_otwarcia, 60 * 60 * 1000 }}},
                 { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.critical, 8000 }}},
                 {}}},
             { "Podłogówki 2", &menuCbk, (const MenuItem[]){
                 { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.czas_otwarcia, 60 * 60 * 1000 }}},
                 { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.critical, 8000 }}},
                 {}}},
             {}}},
         { "Elektryczny", &menuCbk, (const MenuItem[]){
             { "Czas startu", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekStartupTime, 60 * 60 * 1000 }}},
+            { "Czas oczek. na stop", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekOffTime, 60 * 60 * 1000 }}},
             { "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.roomMinHeatTimeElek, 24 * 60 * 60 * 1000 }}},
+            { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekCritical, 8000 }}},
             {}}},
         { "Pellet", &menuCbk, (const MenuItem[]){
             { "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.roomMinHeatTimePellet, 24 * 60 * 60 * 1000 }}},
             {}}},
-        { "Załącz drugą podl.", &boolCbk.base, &Storage::storage.podl2 },
+        //{ "Załącz drugą podl.", &boolCbk.base, &Storage::storage.podl2 },
         {}}},
     { "Zapisz do pamięci", (const MenuItemCallbacks[]){{ saveStorageFunc }}},
     {}

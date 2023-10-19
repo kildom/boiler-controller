@@ -39,8 +39,8 @@ extern const char* currentStateName;
 
 #define setState(stateName) do { \
     DBG("STATE: %s => %s  (in %s)", currentStateName, &(#stateName)[5], __func__); \
-    setStateImpl(stateName); \
     currentStateName = &(#stateName)[5]; \
+    setStateImpl(stateName); \
 } while (0);
 
 

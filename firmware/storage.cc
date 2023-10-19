@@ -9,7 +9,7 @@
 #include "storage.hh"
 
 #define PERSISTENT_SIZE offsetof(Storage, _persistent_end)
-#define STORAGE_MAGIC1 (0x5B095F05 + (PERSISTENT_SIZE << 12))
+#define STORAGE_MAGIC1 (0x5B195F05 + (PERSISTENT_SIZE << 12))
 #define STORAGE_MAGIC2 (0x708ADBC9 + (PERSISTENT_SIZE << 12))
 
 #define SLOT0_DIRTY 1
@@ -32,16 +32,28 @@ static const Storage storageInit = {
     .zaw_powrotu = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
+        .czas_przerwy = 10 * 1000,
+        .czas_pracy_max = 4 * 1000,
+        .czas_pracy_min = 2 * 1000,
+        .korekta = 10,
         .critical = 8500,
     },
     .zaw_podl1 = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
+        .czas_przerwy = 10 * 1000,
+        .czas_pracy_max = 4 * 1000,
+        .czas_pracy_min = 2 * 1000,
+        .korekta = 10,
         .critical = 4500,
     },
     .zaw_podl2 = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
+        .czas_przerwy = 10 * 1000,
+        .czas_pracy_max = 4 * 1000,
+        .czas_pracy_min = 2 * 1000,
+        .korekta = 10,
         .critical = 4500,
     },
     .relay = {

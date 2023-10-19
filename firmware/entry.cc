@@ -14,12 +14,12 @@
 
 void pre_update()
 {
-    emergencyUpdate();
     Time::update_start();
-    Diag::update();
+    emergencyUpdate();
     Zawor::powrotu.update();
     Zawor::podl1.update();
     Zawor::podl2.update();
+    Diag::update();
 }
 
 void post_update()

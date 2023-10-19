@@ -131,7 +131,7 @@ void emergencyUpdate() {
     static DelayOnCondition delayPodl1;
     podl1Awaria
         .update(
-            (storage->pelletDom && delayPodl1.get(Zawor::podl1.isFull() && Temp::piecPelet() > storage->podlFaultPiecTemp, storage->podlFaultDelay))
+            (storage->pelletDom && delayPodl1.get(Zawor::podl1.isFullyOpen() && Temp::piecPelet() > storage->podlFaultPiecTemp, storage->podlFaultDelay))
             || !valid(Temp::podl1(), storage->zaw_podl1.critical)
         )
         .setMax(Temp::podl1());
@@ -140,7 +140,7 @@ void emergencyUpdate() {
     static DelayOnCondition delayPodl2;
     podl2Awaria
         .update(
-            (storage->pelletDom && delayPodl2.get(Zawor::podl2.isFull() && Temp::piecPelet() > storage->podlFaultPiecTemp, storage->podlFaultDelay))
+            (storage->pelletDom && delayPodl2.get(Zawor::podl2.isFullyOpen() && Temp::piecPelet() > storage->podlFaultPiecTemp, storage->podlFaultDelay))
             || !valid(Temp::podl2(), storage->zaw_podl2.critical)
         )
         .setMax(Temp::podl2());

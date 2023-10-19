@@ -172,7 +172,7 @@ function escapeHtml(unsafe: string) {
 function createStateTable() {
     let out = '<table class="state">';
     for (let [groupName, group] of Object.entries(stateStruct)) {
-        out += `<tr><td colspan="2">${escapeHtml(groupName)}</td></tr>`;
+        out += `<tr><td colspan="3">${escapeHtml(groupName)}</td></tr>`;
         for (let field of group) {
             let readonly = field.method != 'param' && field.method != 'in' && field.method != 'out'; // TODO: delete OUT
             if (field.type == 'double') {

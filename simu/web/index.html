@@ -2,15 +2,20 @@
 
 <head>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
         body {
             padding: 0px;
             margin: 0px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 14px;
         }
 
         table {
             padding: 0px;
             margin: 0px;
             border-spacing: 0px;
+            font-family: 'Roboto', sans-serif;
+            font-size: 100%;
         }
 
         td {
@@ -23,7 +28,7 @@
         }
 
         table.state td {
-            padding: 2px;
+            padding: 6px 4px;
         }
 
         #side-panel {
@@ -34,8 +39,27 @@
         #side-panel2 {
             padding: 20px 5px;
         }
-        input[readonly] {
+
+        input[type="text"] {
+            border: 1px solid #e2e2e2;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        input[type="text"][readonly] {
             background-color: #ebebeb;
+            color: #555;
+        }
+
+        table.state tr td {
+            border-bottom: 1px solid #d7d7d7;
+        }
+
+        table.state td[colspan="3"] {
+            background-color: #eee;
+            color: #00007e;
+            font-size: 120%;
+            font-weight: bold;
+            padding: 5px 20px;
         }
     </style>
     <link rel="stylesheet" href="xterm.css">

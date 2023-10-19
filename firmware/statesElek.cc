@@ -57,11 +57,9 @@ enter:
     Relay::elek(false);
     Relay::pompa_podl1(false);
     Relay::pompa_podl2(false);
-    Zawor::podl1.full(+1);
-    Zawor::podl2.full(+1);
 
 update:    
-    if (Zawor::podl1.full_done() && Zawor::podl2.full_done() && roomHeat()) {
+    if (roomHeat()) {
         setState(stateElekRoomWorking);
     }
 }
@@ -76,11 +74,11 @@ enter:
     Relay::pompa_podl1(false);
     Relay::pompa_podl2(false);
     Relay::pompa_cwu(false);
-    Zawor::podl1.reset();
-    Zawor::podl2.reset();
+    Zawor::podl1.reset(+1, false);
+    Zawor::podl2.reset(+1, false);
 
 update:
-    if (Zawor::podl1.full_done() && Zawor::podl2.full_done() && stateTime > (uint64_t)storage->elekStartupTime) {
+    if (Zawor::podl1.ready() && Zawor::podl2.ready() && stateTime > (uint64_t)storage->elekStartupTime) {
         if (roomHeat()) {
             setState(stateElekRoomIdle); // different state if C.W.U implemented
         } else if (cwuHeat()) {

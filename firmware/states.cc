@@ -94,6 +94,19 @@ void updateState()
     currentState(STAGE_UPDATE);
 }
 
+static void stateGlobalIdle(Stage stage)
+{
+    STATE(nullptr, "Brak wybranych zadań. CO i CWU wyłączone.");
+
+enter:
+update:
+    if (selectedPellet()) {
+        //setState(statePiecIdle);
+    } else if (selectedElek()) {
+        setState(stateElekIdle);
+    }
+}
+
 void stateStartup(Stage stage)
 {
     static const StateFlag messageShown(0);
@@ -109,19 +122,12 @@ enter:
     Relay::pompa_podl2(false);
     Relay::pompa_cwu(false);
     Relay::buzzer(false);
-    Zawor::powrotu.reset();
-    Zawor::podl1.reset();
-    Zawor::podl2.reset();
+    Zawor::powrotu.reset(-1, true);
+    Zawor::podl1.reset(-1, true);
+    Zawor::podl2.reset(-1, true);
 
 update:
-    if (Zawor::powrotu.full_done() && Zawor::podl1.full_done() && Zawor::podl2.full_done()) {
-        if (selectedPellet()) {
-            //setState(statePiecIdle);
-        } else if (selectedElek()) {
-            setState(stateElekIdle);
-        } else if (!messageShown) {
-            messageShown.set();
-            setStateMessage("Brak wybranych zadań. CO i CWU wyłączone.");
-        }
+    if (Zawor::powrotu.ready() && Zawor::podl1.ready() && Zawor::podl2.ready()) {
+        setState(stateGlobalIdle);
     }
 }

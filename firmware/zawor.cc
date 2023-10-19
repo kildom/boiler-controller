@@ -1,173 +1,254 @@
+#include  <algorithm>
+
 #include "relays.hh"
 #include "time.hh"
 #include "storage.hh"
 #include "zawor.hh"
 #include "log.hh"
 
-static const int LONG_WORK_TIME = 1000000000;
-static const int SMALL_TIME_MARGIN = 10;
-static const int ZAW_RELAY_ON_TIMEOUT = 10;
-static const int ZAW_RELAY_OFF_TIMEOUT = 100;
-static const int ZAW_RESET_WORK_TIME_MUL = 5;
-static const int ZAW_RESET_OPEN_TIME_DIV = 8;
+// Korutyny dla ubogich:
+
+#define DELAY(time) _DELAY2(time, __LINE__, __COUNTER__);
+#define _DELAY2(time, l, c) _DELAY3(time, l, c)
+#define _DELAY3(time, l, c) \
+    timer.set(time); \
+    resumeLabel = &&_resume_##l##_##c; \
+    _resume_##l##_##c: \
+    if (!timer.ready()) return; \
+
+#define IDLE(cond) _IDLE2(cond, __LINE__, __COUNTER__);
+#define _IDLE2(cond, l, c) _IDLE3(cond, l, c)
+#define _IDLE3(cond, l, c) \
+    resumeLabel = &&_resume_##l##_##c; \
+    _resume_##l##_##c: \
+    if (cond) return; \
+
+
+static const int ZAW_RELAY_OFF_TIMEOUT = 300;
+static const int ZAW_RESET_WORK_TIME_MUL = 8;
+
 
 Zawor::Zawor(Storage &storage, Relay::Index relay_on, Relay::Index relay_plus):
     storage(storage),
     relay_on(relay_on),
     relay_plus(relay_plus),
-    pos(storage.czas_min_otwarcia),
-    work_time(LONG_WORK_TIME),
+    current_signal(0),
+    signal_pos(storage.czas_min_otwarcia),
     real_pos(storage.czas_min_otwarcia),
-    state(IDLE),
-    direction(0)
+    totalWorkTime(0),
+    event(0),
+    direction(0),
+    resumeLabel(nullptr),
+    lastWorkTime(0),
+    delayTime(0)
 {
     DBG("%d: Construct, otw %d, min %d", relay_on, storage.czas_otwarcia, storage.czas_min_otwarcia);
 }
 
-void Zawor::reset()
+void Zawor::update()
 {
-    real_pos = storage.czas_otwarcia;
-    full(-1);
+    int threshold = 0;
+    bool full = false;
+    bool tooLow = false;
+    bool tooHigh = false;
+    int timeout = 0;
+    int margin = 0;
+    uint64_t idleTime = 0;
+
+    
+    // Pomnóż sygnał przez maksymany stosunek pracy zaworu.
+    int signal_adjusted = current_signal * storage.czas_pracy_max / (storage.czas_przerwy + storage.czas_pracy_max);
+
+    // Sygnał nie może wymuszać pracy szybszej niż zawór da radę. Limit to 256, odejmując margines jest 200.
+    if (signal_adjusted > 200) {
+        signal_adjusted = 200;
+    } else if (signal_adjusted < -200) {
+        signal_adjusted = 200;
+    }
+
+    // Update position based on signal.
+    signal_pos += signal_adjusted * Time::delta;
+
+    // Normalizuj jednostki pozycji i limituj do zakresu roboczego.
+    int signal_pos_norm = (signal_pos + 128) / 256;
+    if (signal_pos_norm < storage.czas_min_otwarcia) {
+        signal_pos_norm = storage.czas_min_otwarcia;
+        signal_pos = 256 * signal_pos_norm;
+    } else if (signal_pos_norm > storage.czas_otwarcia - storage.czas_min_otwarcia) {
+        signal_pos_norm = storage.czas_otwarcia - storage.czas_min_otwarcia;
+        signal_pos = 256 * signal_pos_norm;
+    }
+
+    // Wznów w miejscu ostatniego oczekiwania
+    if (resumeLabel != nullptr) {
+        goto *resumeLabel;
+    }
+
+    if (event == 0) { // Normale sterowanie
+
+        /* Oblicz próg aktywacji zaworu
+         *  [oś: threshold]
+         *  | 
+         *  |\
+         *  | \,    __ czas_pracy_max
+         *  |  \
+         *  |   \_____ czas_pracy_min
+         *  |
+         *  +------------------------> [oś: idleTime]
+         *  |<->| 2 * czas_przerwy
+         */
+        idleTime = Time::time - lastWorkTime;
+        if (idleTime >= 2 * storage.czas_przerwy) {
+            threshold = storage.czas_pracy_min;
+        } else {
+            threshold = 2 * storage.czas_pracy_max - storage.czas_pracy_min - (int)(((int64_t)storage.czas_pracy_max - (int64_t)storage.czas_pracy_min) * (int64_t)idleTime / (int64_t)storage.czas_przerwy);
+        }
+
+        // Jeżeli poza progiem, uruchom zawór
+        tooLow = real_pos < signal_pos_norm - threshold;
+        tooHigh = real_pos > signal_pos_norm + threshold;
+
+        if (tooLow || tooHigh) {
+        
+            direction = tooLow ? +1 : -1;
+
+            // Uruchom zawór na czas równy różnicy
+            set_relays(direction);
+            delayTime = direction * (signal_pos_norm - real_pos);
+            DELAY(delayTime - storage.korekta);
+            set_relays(0);
+
+            // Aktualizuj aktualną pozycję i całkowity czas pracy
+            real_pos += direction * (delayTime + timer.overtime());
+            totalWorkTime += delayTime;
+            lastWorkTime = Time::time;
+
+            // Czekaj na całkowite zatrzymanie
+            DELAY(ZAW_RELAY_OFF_TIMEOUT);
+
+            // Jeżeli długi czas pracy bez resetu i znajdujemy się na granicy obszaru roboczego, resetuj pozycję zaworu.
+            if (totalWorkTime > ZAW_RESET_WORK_TIME_MUL * storage.czas_otwarcia) {
+                if (signal_pos_norm <= storage.czas_min_otwarcia) {
+                    event = RESET | FLAG_MINUS;
+                    Time::schedule(0);
+                } else if (signal_pos_norm >= storage.czas_otwarcia - storage.czas_min_otwarcia) {
+                    event = RESET | FLAG_PLUS;
+                    Time::schedule(0);
+                }
+            }
+        }
+
+    } else if ((event & 0xF) == RESET) { // Reset zaworu
+
+        // Zapamiętaj parametry eventu i wyczyść event
+        direction = (event & FLAG_PLUS) ? +1 : -1;
+        full = (event & FLAG_FULL) != 0;
+        event = 0;
+
+        // Oblicz czas potrzebny do dojścia do granicy zaworu
+        margin = storage.czas_otwarcia / 16;
+        if (full) {
+            timeout = storage.czas_otwarcia + margin;
+        } else if (direction < 0) {
+            timeout = real_pos;
+        } else {
+            timeout = storage.czas_otwarcia - real_pos;
+        }
+        timeout += margin;
+
+        // Przejdź do brzegu zaworu
+        set_relays(direction);
+        DELAY(timeout);
+        set_relays(0);
+
+        // Czekaj na całkowite zatrzymanie
+        DELAY(ZAW_RELAY_OFF_TIMEOUT);
+
+        // Ustaw zawór na minimalne otwarcie/zamknięcie
+        set_relays(-direction);
+        DELAY(storage.czas_min_otwarcia - storage.korekta);
+        set_relays(0);
+
+        // Ustaw zresetowane wartości
+        real_pos = storage.czas_min_otwarcia + timer.overtime();
+        if (direction > 0) {
+            real_pos = storage.czas_otwarcia - real_pos;
+        }
+        signal_pos = real_pos * 256;
+        totalWorkTime = 0;
+        current_signal = 0;
+
+        // Czekaj na całkowite zatrzymanie
+        DELAY(ZAW_RELAY_OFF_TIMEOUT);
+    
+    } else if ((event & 0xF) == FORCE) { // Wymuszone działanie
+        
+        // Zapamiętaj kierunek i czas rozpoczęcia
+        direction = (event & FLAG_PLUS) ? +1 : -1;
+        lastWorkTime = Time::time;
+
+        // Uruchom zawór tak długo jak długo jest aktywny ten event.
+        set_relays(direction);
+        IDLE(event == (FORCE | (direction > 0 ? FLAG_PLUS : FLAG_MINUS)));
+        set_relays(0);
+
+        // Uaktualnij całkowity czas pracy i rzeczywistą pozycję.
+        totalWorkTime += Time::time - lastWorkTime;
+        real_pos += direction * (Time::time - lastWorkTime + storage.korekta);
+        if (real_pos >= storage.czas_otwarcia) {
+            real_pos = storage.czas_otwarcia;
+        } else if (real_pos <= 0) {
+            real_pos = 0;
+        }
+        
+        // Ustaw pozycję (sygnał) na taką samą jak rzeczywista z wyjątkiem minialnego otwarcia
+        signal_pos = real_pos;
+        if (signal_pos > storage.czas_otwarcia - storage.czas_min_otwarcia) {
+            signal_pos = storage.czas_otwarcia - storage.czas_min_otwarcia;
+        } else if (signal_pos < storage.czas_min_otwarcia) {
+            signal_pos = storage.czas_min_otwarcia;
+        }
+        signal_pos *= 256;
+
+        // Czekaj na całkowite zatrzymanie
+        DELAY(ZAW_RELAY_OFF_TIMEOUT);
+    }
+
+    // Normale wyjście z funkcji powoduje powrót do początku przy następnym wywołaniu.
+    resumeLabel = nullptr;
 }
 
-void Zawor::full(int new_direction)
+
+void Zawor::reset(int new_direction, bool full)
 {
-    direction = 0;
-    work_time = LONG_WORK_TIME;
-    pos = new_direction < 0 ? storage.czas_min_otwarcia : storage.czas_otwarcia - storage.czas_min_otwarcia;
+    event = RESET | (new_direction > 0 ? FLAG_PLUS : FLAG_MINUS) | (full ? FLAG_FULL : 0);
+    current_signal = 0;
     Time::schedule(0);
 }
 
-bool Zawor::full_done()
+bool Zawor::ready()
 {
-    bool pos_ok = ((real_pos <= storage.czas_min_otwarcia + SMALL_TIME_MARGIN) && (direction <= 0))
-        || ((real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN) && (direction >= 0));
-    return state == IDLE && (pos_ok || work_time < LONG_WORK_TIME);
+    return event == 0 && resumeLabel == nullptr;
 }
 
-void Zawor::ster(int new_direction)
+void Zawor::force(int new_direction)
 {
-    direction = new_direction < 0 ? -1 : new_direction > 0 ? 1 : 0;
-}
-
-void Zawor::update()
-{
-    // Zmień żądaną pozycję
-    pos += direction * Time::delta;
-    //DBG("%d: update (%d, %d, %d)", relay_on, direction, pos, real_pos);
-    // Ogranicz żądaną pozycję do min max
-    if (pos <= storage.czas_min_otwarcia) {
-        pos = storage.czas_min_otwarcia;
-        if (direction < 0) direction = 0;
-    } else if (pos >= storage.czas_otwarcia - storage.czas_min_otwarcia) {
-        pos = storage.czas_otwarcia - storage.czas_min_otwarcia;
-        if (direction > 0) direction = 0;
-    } else if (direction < 0) { // Wymuś update, gdy osiągnięty zostanie limit
-        Time::schedule(pos - storage.czas_min_otwarcia);
-    } else if (direction > 0) {
-        Time::schedule(storage.czas_otwarcia - storage.czas_min_otwarcia - pos);
+    if (new_direction == 0) {
+        event = 0;
+    } else  {
+        event = FORCE | (new_direction > 0 ? FLAG_PLUS : FLAG_MINUS);
+        current_signal = 0;
     }
-
-    switch (state)
-    {
-    case DELAY_IDLE:
-        if (timer.ready()) {
-            state = IDLE;
-            DBG("%d: DELAY_IDLE => IDLE (%d, %d)", relay_on, pos, real_pos);
-        } else {
-            break;
-        }
-        // fallback to IDLE state
-    case IDLE:
-        if (pos - SMALL_TIME_MARGIN > real_pos) {
-            set_relays(+1);
-            timer.set(ZAW_RELAY_ON_TIMEOUT);
-            state = DELAY_PLUS;
-            DBG("%d: IDLE => DELAY_PLUS (%d, %d)", relay_on, pos, real_pos);
-        } else if (pos + SMALL_TIME_MARGIN < real_pos) {
-            set_relays(-1);
-            timer.set(ZAW_RELAY_ON_TIMEOUT);
-            state = DELAY_MINUS;
-            DBG("%d: IDLE => DELAY_MINUS (%d, %d)", relay_on, pos, real_pos);
-        }
-        break;
-
-    case DELAY_PLUS:
-    case DELAY_MINUS:
-        if (timer.ready()) {
-            int overtime = timer.overtime();
-            real_pos += overtime * (state == DELAY_MINUS ? -1 : 1);
-            work_time += overtime;
-            state = (State)(state + 1); // RUN_PLUS or RUN_MINUS
-            DBG("%d: DELAY_PLUS/MINUS => RUN_PLUS/MINUS (%d, %d)", relay_on, pos, real_pos);
-        }
-        break;
-
-    case RUN_PLUS:
-        real_pos += Time::delta;
-        work_time += Time::delta;
-        if (real_pos >= pos) {
-            if (pos == storage.czas_otwarcia - storage.czas_min_otwarcia && work_time > ZAW_RESET_WORK_TIME_MUL * storage.czas_otwarcia) {
-                goto reset_state_entry;
-            } else {
-                goto delay_idle_state_entry;
-            }
-        } else if (direction < 0) {
-            Time::schedule((pos - real_pos + 1) / 2);
-        } else if (direction == 0) {
-            Time::schedule(pos - real_pos);
-        }
-        break;
-
-    case RUN_MINUS:
-        real_pos -= Time::delta;
-        work_time += Time::delta;
-        if (real_pos <= pos) {
-            if (pos == storage.czas_min_otwarcia && work_time > ZAW_RESET_WORK_TIME_MUL * storage.czas_otwarcia) {
-                goto reset_state_entry;
-            } else {
-                goto delay_idle_state_entry;
-            }
-        } else if (direction > 0) {
-            Time::schedule((real_pos - pos + 1) / 2);
-        } else if (direction == 0) {
-            Time::schedule(real_pos - pos);
-        }
-        break;
-
-    case RESET_PLUS:
-    case RESET_MINUS:
-        if (timer.ready()) {
-            real_pos = (state == RESET_PLUS) ? storage.czas_otwarcia : 0;
-            work_time = 0;
-            set_relays(0);
-            timer.set(ZAW_RELAY_OFF_TIMEOUT);
-            state = DELAY_IDLE;
-            DBG("%d: RESET_PLUS/MINUS => DELAY_IDLE (%d, %d)", relay_on, pos, real_pos);
-        }
-        break;
-
-    }
-
-    return;
-
-reset_state_entry:
-    DBG("%d: RUN_PLUS/MINUS => RESET_PLUS/MINUS (%d, %d)", relay_on, pos, real_pos);
-    timer.set(storage.czas_min_otwarcia + storage.czas_otwarcia / ZAW_RESET_OPEN_TIME_DIV);
-    state = (State)(state + 1); // RESET_PLUS or RESET_MINUS
-    return;
-
-delay_idle_state_entry:
-    DBG("%d: RUN_PLUS/MINUS => DELAY_IDLE (%d, %d)", relay_on, pos, real_pos);
-    set_relays(0);
-    timer.set(ZAW_RELAY_OFF_TIMEOUT);
-    state = DELAY_IDLE;
-    return;
 }
 
-bool Zawor::isFull()
+void Zawor::signal(int value)
 {
-    return real_pos >= storage.czas_otwarcia - storage.czas_min_otwarcia - SMALL_TIME_MARGIN;
+    current_signal = value;
+}
+
+bool Zawor::isFullyOpen()
+{
+    return ((signal_pos + 128) / 256 >= storage.czas_otwarcia - storage.czas_min_otwarcia);
 }
 
 void Zawor::set_relays(int new_direction)

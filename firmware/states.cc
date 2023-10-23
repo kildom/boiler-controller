@@ -47,7 +47,7 @@ bool selectedElek() {
         && !(emergencyDisable.cwu && emergencyDisable.podl1 && emergencyDisable.podl2);
 }
 
-bool cwuHeat() {
+bool cwuHeat(bool forceMax) {
     auto cwuTemp = Temp::cwu();
 
     if (cwuTemp == Temp::INVALID) {
@@ -58,7 +58,7 @@ bool cwuHeat() {
         return false;
     } else if (cwuTemp >= storage->cwuTempMax) {
         storage->cwuHeatState = false;
-    } else if (cwuTemp < storage->cwuTempMin) {
+    } else if (forceMax || cwuTemp < storage->cwuTempMin) {
         storage->cwuHeatState = true;
     }
 
@@ -71,7 +71,7 @@ bool roomHeat() {
         return false;
     }
 
-    if (Input::heatRoom()) {
+    if (Input::heatRoom()) { // TODO: always false if all room heating disabled
         if (storage->roomHeatEnd == 0) {
             uint64_t minTime = selectedPellet() ? storage->roomMinHeatTimePellet : storage->roomMinHeatTimeElek;
             storage->roomHeatEnd = Time::time + minTime;
@@ -103,7 +103,7 @@ update:
     if (selectedPellet()) {
         //setState(statePiecIdle);
     } else if (selectedElek()) {
-        setState(stateElekIdle);
+        setState(stateElek);
     }
 }
 

@@ -3,6 +3,6 @@
 
 #include "states.hh"
 
-void stateElekIdle(Stage stage);
+void stateElek(Stage stage);
 
 #endif

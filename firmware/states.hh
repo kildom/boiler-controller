@@ -99,7 +99,7 @@ void setStateMessage(const char* text);
 
 bool selectedPellet();
 bool selectedElek();
-bool cwuHeat();
+bool cwuHeat(bool forceMax = false);
 bool roomHeat();
 
 void updateState();

@@ -1,27 +1,11 @@
 #include  <algorithm>
 
+#include "coroutines.hh"
 #include "relays.hh"
 #include "time.hh"
 #include "storage.hh"
 #include "zawor.hh"
 #include "log.hh"
-
-// Korutyny dla ubogich:
-
-#define DELAY(time) _DELAY2(time, __LINE__, __COUNTER__);
-#define _DELAY2(time, l, c) _DELAY3(time, l, c)
-#define _DELAY3(time, l, c) \
-    timer.set(time); \
-    resumeLabel = &&_resume_##l##_##c; \
-    _resume_##l##_##c: \
-    if (!timer.ready()) return; \
-
-#define IDLE(cond) _IDLE2(cond, __LINE__, __COUNTER__);
-#define _IDLE2(cond, l, c) _IDLE3(cond, l, c)
-#define _IDLE3(cond, l, c) \
-    resumeLabel = &&_resume_##l##_##c; \
-    _resume_##l##_##c: \
-    if (cond) return; \
 
 
 static const int ZAW_RELAY_OFF_TIMEOUT = 300;
@@ -115,7 +99,7 @@ void Zawor::update()
             // Uruchom zawór na czas równy różnicy
             set_relays(direction);
             delayTime = direction * (signal_pos_norm - real_pos);
-            DELAY(delayTime - storage.korekta);
+            WAIT_FOR(delayTime - storage.korekta);
             set_relays(0);
 
             // Aktualizuj aktualną pozycję i całkowity czas pracy
@@ -124,7 +108,7 @@ void Zawor::update()
             lastWorkTime = Time::time;
 
             // Czekaj na całkowite zatrzymanie
-            DELAY(ZAW_RELAY_OFF_TIMEOUT);
+            WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
 
             // Jeżeli długi czas pracy bez resetu i znajdujemy się na granicy obszaru roboczego, resetuj pozycję zaworu.
             if (totalWorkTime > ZAW_RESET_WORK_TIME_MUL * storage.czas_otwarcia) {
@@ -158,15 +142,15 @@ void Zawor::update()
 
         // Przejdź do brzegu zaworu
         set_relays(direction);
-        DELAY(timeout);
+        WAIT_FOR(timeout);
         set_relays(0);
 
         // Czekaj na całkowite zatrzymanie
-        DELAY(ZAW_RELAY_OFF_TIMEOUT);
+        WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
 
         // Ustaw zawór na minimalne otwarcie/zamknięcie
         set_relays(-direction);
-        DELAY(storage.czas_min_otwarcia - storage.korekta);
+        WAIT_FOR(storage.czas_min_otwarcia - storage.korekta);
         set_relays(0);
 
         // Ustaw zresetowane wartości
@@ -179,7 +163,7 @@ void Zawor::update()
         current_signal = 0;
 
         // Czekaj na całkowite zatrzymanie
-        DELAY(ZAW_RELAY_OFF_TIMEOUT);
+        WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
     
     } else if ((event & 0xF) == FORCE) { // Wymuszone działanie
         
@@ -189,7 +173,7 @@ void Zawor::update()
 
         // Uruchom zawór tak długo jak długo jest aktywny ten event.
         set_relays(direction);
-        IDLE(event == (FORCE | (direction > 0 ? FLAG_PLUS : FLAG_MINUS)));
+        WAIT_UNTIL(event != (FORCE | (direction > 0 ? FLAG_PLUS : FLAG_MINUS)));
         set_relays(0);
 
         // Uaktualnij całkowity czas pracy i rzeczywistą pozycję.
@@ -211,7 +195,7 @@ void Zawor::update()
         signal_pos *= 256;
 
         // Czekaj na całkowite zatrzymanie
-        DELAY(ZAW_RELAY_OFF_TIMEOUT);
+        WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
     }
 
     // Normale wyjście z funkcji powoduje powrót do początku przy następnym wywołaniu.

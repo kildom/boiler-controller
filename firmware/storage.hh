@@ -25,12 +25,16 @@ struct Storage {
     int elekOffTime;
     int cwuTempMin;
     int cwuTempMax;
+    int cwuTempAddCoolDown; // TODO
     int cwuTempCritical;
     int roomMinHeatTimePellet;
     int roomMinHeatTimeElek;
     // TODO: Add to menu
     int podlFaultDelay;
     int podlFaultPiecTemp;
+    int pelletHeatUpMaxTime; // TODO
+    int pelletMinWorkTime; // TODO
+    int coolDownMarginCwu; // TODO
     uint32_t crc;
     uint32_t magic2;
     uint32_t _persistent_end;

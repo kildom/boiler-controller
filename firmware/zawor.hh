@@ -22,6 +22,12 @@ public:
         uint16_t czas_pracy_min;
         /// Czas, o ile dłużej działa zawór niż działa sygnał ze sterownika (ujemny, jeżeli zawór działa krócej).
         int16_t korekta;
+        /// Temperatura zadana
+        int16_t temp;
+        /// Histereza (temp ± hist)
+        int16_t hist;
+        /// Różnica temp., przy której zaczyna się ster. proporcjonalne
+        int16_t proportionalDiff;
         /// Krytyczna temperatura wyjściowa z zaworu.
         int critical;
     };

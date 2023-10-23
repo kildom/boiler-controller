@@ -1,88 +1,67 @@
 
+#include "coroutines.hh"
 #include "states.hh"
 #include "statesElek.hh"
 
-static void stateElekRoomStopping(Stage stage);
-static void stateElekRoomWorking(Stage stage);
-static void stateElekRoomIdle(Stage stage);
+// TODO: Objekt do obsługi podlogówki:
+// - z obsługą emergency disable pod spodem (zawór zamknięty, pompka nie działa, zraca fałszywą temperature: wartość zadana)
+// - z zapamiętywaniem stanu, żeby nie trzeba było robić bezsensownych resetów
+// - z bezpiecznym przywracaniem stanu, gdy fault usunięty:
+//    - jeżeli fullOpen - reset(+1, true)
+//    - jeżeli fullClose - reset(-1, true)
+//    - jeżeli signal - reset(-1, true)
+//    - po resecie
+//       - włącz pomkę, jeżeli trzeba
+//       - przywóć zwracanie rzeczywistej temeratury
+struct {
+    void fullOpen(); // just set state if emergency disable
+    void fullClose(); // just set state if emergency disable
+    void signal(int value); // just set state if emergency disable
+    bool ready(); // zawsze true, gdy emergency disable
+    void pompa(bool); // pompa zawsze wyłączona, gdy emergency disable
+    bool isFullOpen(); // zależy od stanu, gdy emergency disable
+    int temp(); // zawsze równa zadanej, gdy emergency disable
+    bool isDisabled();
+};
 
-static bool stateElekParent(Stage stage)
+void stateElek(Stage stage)
 {
-    PARENT_STATE(nullptr);
+    static void* resumeLabel;
+    static Timer timer;
+
+    STATE(nullptr, "Kocioł ekektryczny - rozpoczynanie");
 
 enter:
-update:
-
-    if (!selectedElek()) {
-        setState(stateStartup);
-        return false;
-    }
-
-    return true;
-}
-
-static void stateElekRoomStopping(Stage stage)
-{
-    STATE(stateElekParent, "Kocioł ekek. - ogrz. domu (wyłączanie)");
-
-enter:
+    resumeLabel = nullptr;
     Relay::elek(false);
-
-update:
-    if (stateTime > storage->elekOffTime) {
-        setState(stateElekRoomIdle);
-    }
-}
-
-static void stateElekRoomWorking(Stage stage)
-{
-    STATE(stateElekParent, "Kocioł ekek. - ogrz. domu (działa)");
-
-enter:
-    Relay::elek(true);
-    Relay::pompa_podl1(true);
-    Relay::pompa_podl2(true);
-
-update:
-    if (!roomHeat()) {
-        setState(stateElekRoomStopping);
-    }
-}
-
-static void stateElekRoomIdle(Stage stage)
-{
-    STATE(stateElekParent, "Kocioł ekek. - ogrz. domu (oczekiwanie)");
-
-enter:
-    Relay::elek(false);
-    Relay::pompa_podl1(false);
-    Relay::pompa_podl2(false);
-
-update:    
-    if (roomHeat()) {
-        setState(stateElekRoomWorking);
-    }
-}
-
-void stateElekIdle(Stage stage)
-{
-    STATE(stateElekParent, "Kocioł ekektryczny - nieaktywny.");
-
-enter:
-    // Zatrzymaj wszystko
-    Relay::elek(false);
-    Relay::pompa_podl1(false);
+    Relay::pompa_podl1(false); // TODO: emergency disable podl1/podl2
     Relay::pompa_podl2(false);
     Relay::pompa_cwu(false);
     Zawor::podl1.reset(+1, false);
     Zawor::podl2.reset(+1, false);
 
-update:
-    if (Zawor::podl1.ready() && Zawor::podl2.ready() && stateTime > (uint64_t)storage->elekStartupTime) {
-        if (roomHeat()) {
-            setState(stateElekRoomIdle); // different state if C.W.U implemented
-        } else if (cwuHeat()) {
-            //setState(stateElekCWU);
-        }
+    WAIT_FOR(storage->elekStartupTime);
+    WAIT_UNTIL(Zawor::podl1.ready() && Zawor::podl2.ready());
+
+    while (true) {
+        setStateMessage("Kocioł ekektryczny - oczekiwanie");
+        WAIT_UNTIL(roomHeat());
+        Relay::elek(true);
+        Relay::pompa_podl1(true);
+        Relay::pompa_podl2(true);
+        setStateMessage("Kocioł ekektryczny - grzanie");
+        WAIT_UNTIL(!roomHeat());
+        Relay::elek(false);
+        setStateMessage("Kocioł ekektryczny - wyłączanie");
+        WAIT_FOR(storage->elekOffTime);
+        Relay::pompa_podl1(false);
+        Relay::pompa_podl2(false);
     }
+
+update:
+    if (!selectedElek()) {
+        setState(stateStartup);
+        return;
+    }
+    goto *resumeLabel;
 }

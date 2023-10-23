@@ -1,4 +1,5 @@
 
+#include "global.hh"
 #include "lowlevel.hh"
 #include "proto.hh"
 #include "crc.hh"

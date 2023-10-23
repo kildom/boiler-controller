@@ -1,7 +1,8 @@
 #ifndef _UTILS_HH_
 #define _UTILS_HH_
 
-#include <stdlib.h>
+#include "global.hh"
+#include "time.hh"
 
 template<class P, class M>
 constexpr size_t _offsetOfImpl(const M P::*member)
@@ -55,5 +56,54 @@ public:
     }
 };
 
+
+class DelayOnCondition {
+/* ▁▁▁▁▇▁▁▁▇▇▇▇▇▇▇▇▁▁▁▁▁▁  input
+ *        ▕ -T- ▏
+ * ▁▁▁▁▁▁▁▁▁▁▁▁▁▇▇▇▁▁▁▁▁▁  output
+ */
+private:
+    uint64_t onTime;
+
+public:
+    DelayOnCondition(): onTime(Time::time) {}
+
+    bool get(bool input, int time) {
+        if (input) {
+            if (Time::time >= onTime + time) {
+                return true;
+            }
+        } else {
+            onTime = Time::time;
+        }
+        return false;
+    }
+};
+
+class DelayOffCondition {
+/* ▁▁▁▁▇▁▇▁▁▁▁▇▇▇▇▇▇▇▇▁▁▁  input
+ *    ▕ -T- ▏▕ -T- ▏
+ * ▁▁▁▁▇▇▇▇▇▁▁▇▇▇▇▇▇▇▇▁▁▁  output
+ */
+private:
+    uint64_t onTime;
+    bool prev;
+
+public:
+    DelayOffCondition(): onTime(0), prev(false) {}
+
+    bool get(bool input, int time) {
+        bool active = Time::time < onTime;
+        if (!prev && input && !active) {
+            onTime = Time::time + time;
+        }
+        prev = input;
+        return input || active;
+    }
+
+    void triggerNow(int time) {
+        onTime = Time::time + time;
+    }
+};
 
 #endif // _UTILS_HH_

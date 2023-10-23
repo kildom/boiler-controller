@@ -2,14 +2,18 @@
 #include <stdint.h>
 #include <string.h>
 #include <stddef.h>
+
+#include "global.hh"
 #include "log.hh"
 #include "crc.hh"
 #include "lowlevel.hh"
 #include "utils.hh"
 #include "storage.hh"
 
+#include "autogen.inc"
+
 #define PERSISTENT_SIZE offsetof(Storage, _persistent_end)
-#define STORAGE_MAGIC1 (0x5B195F05 + (PERSISTENT_SIZE << 12))
+#define STORAGE_MAGIC1 (0x5B395F05 + (PERSISTENT_SIZE << 12))
 #define STORAGE_MAGIC2 (0x708ADBC9 + (PERSISTENT_SIZE << 12))
 
 #define SLOT0_DIRTY 1
@@ -22,13 +26,20 @@ static uint32_t write_state;
 uint8_t writeBuffer[PERSISTENT_SIZE]; // Used for async write
 uint8_t snapBuffer[PERSISTENT_SIZE];  // Snapshot buffer
 
-Storage Storage::storage = {
+Storage storage = {
     .ver = 0,
 };
 
 static const Storage storageInit = {
     .magic1 = STORAGE_MAGIC1,
     .ver = 0,
+    .relay = {
+        .map = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, },
+        .invert = 0,
+    },
+    .temp = {
+        .map = { 0, 1, 2, 3, 4, 5, },
+    },
     .zaw_powrotu = {
         .czas_otwarcia = 2 * 60 * 1000,
         .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
@@ -36,7 +47,8 @@ static const Storage storageInit = {
         .czas_pracy_max = 4 * 1000,
         .czas_pracy_min = 2 * 1000,
         .korekta = 10,
-        .critical = 8500,
+        .temp = 5500,
+        .critical = 5000,
     },
     .zaw_podl1 = {
         .czas_otwarcia = 2 * 60 * 1000,
@@ -45,6 +57,7 @@ static const Storage storageInit = {
         .czas_pracy_max = 4 * 1000,
         .czas_pracy_min = 2 * 1000,
         .korekta = 10,
+        .temp = 3300,
         .critical = 4500,
     },
     .zaw_podl2 = {
@@ -54,14 +67,8 @@ static const Storage storageInit = {
         .czas_pracy_max = 4 * 1000,
         .czas_pracy_min = 2 * 1000,
         .korekta = 10,
+        .temp = 3300,
         .critical = 4500,
-    },
-    .relay = {
-        .map = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, },
-        .invert = 0,
-    },
-    .temp = {
-        .map = { 0, 1, 2, 3, 4, 5, },
     },
     .pelletDom = false,
     .pelletCwu = false,
@@ -75,16 +82,16 @@ static const Storage storageInit = {
     .cwuTempMin = 3500,
     .cwuTempMax = 5000,
     .cwuTempCritical = 6500,
-    .roomMinHeatTimePellet = 2 * 60 * 60 * 1000,
-    .roomMinHeatTimeElek = 15 * 60 * 1000,
-    .podlFaultDelay = 2 * 60 * 1000,
+    //.roomMinHeatTimePellet = 2 * 60 * 60 * 1000,
+    //.roomMinHeatTimeElek = 15 * 60 * 1000,
+    //.podlFaultDelay = 2 * 60 * 1000,
     .podlFaultPiecTemp = 6000,
     .crc = 0,
     .magic2 = STORAGE_MAGIC2,
     // ---------------- Non-permanent data
     .time = 0,
-    .roomHeatEnd = 0,
-    .cwuHeatState = false,
+    //.roomHeatEnd = 0,
+    //.cwuHeatState = false,
 };
 
 uint32_t Storage::getCrc()
@@ -99,7 +106,7 @@ uint32_t Storage::getCrc()
 
 void Storage::init()
 {
-    if (Storage::storage.magic1 == 0) {
+    if (storage.magic1 == 0) {
 
         // Copy initial non-persistent values
         memcpy((uint8_t*)&storage + PERSISTENT_SIZE, (uint8_t*)&storageInit + PERSISTENT_SIZE, sizeof(storage) - PERSISTENT_SIZE);
@@ -174,3 +181,4 @@ void Storage::write()
     storage.crc = getCrc();
     memcpy(snapBuffer, &storage, PERSISTENT_SIZE);
 }
+

@@ -1,7 +1,7 @@
 #ifndef _STATES_HH_
 #define _STATES_HH_
 
-#include "lowlevel.hh"
+#include "global.hh"
 #include "log.hh"
 #include "relays.hh"
 #include "zawor.hh"
@@ -101,6 +101,8 @@ bool selectedPellet();
 bool selectedElek();
 bool cwuHeat(bool forceMax = false);
 bool roomHeat();
+bool roomHeatEnabled();
+bool cwuHeatEnabled();
 
 void updateState();
 

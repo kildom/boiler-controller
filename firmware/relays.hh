@@ -61,6 +61,9 @@ public:
     static inline void buzzer(bool on) { set(BUZZER, on); }                 // R13 Relay 13 - brzęczyk
     static inline bool buzzer() { return get(BUZZER); }
 
+    static inline void pompa_podl(int index, bool on) { set(index == 0 ? POMPA_PODL1 : POMPA_PODL2, on); }
+    static inline bool pompa_podl(int index) { return get(index == 0 ? POMPA_PODL1 : POMPA_PODL2); }
+
     static void set(Index index, bool on);
     static bool get(Index index);
     static void powerOff(Index index);

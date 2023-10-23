@@ -10,28 +10,31 @@ class Zawor
 public:
 
     struct Storage {
-        /// Czas pełnego otwarcia zaworu.
+        // -> BEGIN Zawor::Storage
+        // Czas pełnego otwarcia zaworu, time_ms, default: 2_min, range: 1_sec..1_h
         int czas_otwarcia;
-        /// Czas potrzebny na minimalne otwarcie zaworu.
+        // Czas min. otwarcia zaworu, time_ms, default: 4_sec, range: 0..1_h
         int czas_min_otwarcia;
-        /// Czas przerwy przy maksymanym sygnale sterującym.
-        uint16_t czas_przerwy;
-        /// Czas pracy przy maksymanym sygnale sterującym.
-        uint16_t czas_pracy_max;
-        /// Minimalny dopuszczalny czas pracy.
-        uint16_t czas_pracy_min;
-        /// Czas, o ile dłużej działa zawór niż działa sygnał ze sterownika (ujemny, jeżeli zawór działa krócej).
+        // Czas przerwy, time_ms, default: 15_sec, range: 1_sec..10_min
+        int czas_przerwy;
+        // Czas pracy, time_ms, default: 2_sec, range: 1_sec..10_min
+        int czas_pracy_max;
+        // Min. dopuszczalny czas pracy., time_ms, default: 1_sec, range: 1_sec..10_min
+        int czas_pracy_min;
+        // Korekta czasu działania zaw., time_ms, default: 0_sec, range: -1_sec..+1_sec
         int16_t korekta;
-        /// Temperatura zadana
+        // Temperatura zadana, temp, default: 35_deg, range: 20_deg..80_deg
         int16_t temp;
-        /// Histereza (temp ± hist)
+        // Histereza, default: temp, default: 1_deg, range: 0..10_deg
         int16_t hist;
-        /// Różnica temp., przy której zaczyna się ster. proporcjonalne
+        // Różnica temp. ster. porporcjonalnego, temp, default: 2_deg, range: 0..20_deg
         int16_t proportionalDiff;
-        /// Krytyczna temperatura wyjściowa z zaworu.
+        // Temp. krytyczna, temp, default: 45_deg, range: 0..80_deg
         int critical;
+        // -> END
     };
 
+    Storage& storage;
 private:
 
     static const int RESET = 1;
@@ -40,7 +43,6 @@ private:
     static const int FLAG_MINUS = 0 << 8;
     static const int FLAG_FULL = 1 << 9;
 
-    Storage& storage;
     Relay::Index relay_on;
     Relay::Index relay_plus;
 
@@ -74,6 +76,7 @@ public:
     static Zawor powrotu;
     static Zawor podl1;
     static Zawor podl2;
+    static Zawor* podl[2];
 
 private:
 

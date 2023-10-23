@@ -1,6 +1,9 @@
 
+#include "global.hh"
 #include "emergency.hh"
 #include "states.hh"
+#include "podl.hh"
+#include "utils.hh"
 #include "statesElek.hh"
 
 
@@ -35,16 +38,20 @@ void setStateMessage(const char* text)
 }
 
 bool selectedPellet() {
-    return (storage->pelletCwu || storage->pelletDom)
+    return (storage.pelletCwu || storage.pelletDom)
         && !emergencyDisable.pellet
-        && !(emergencyDisable.cwu && emergencyDisable.podl1 && emergencyDisable.podl2);
+        && !(emergencyDisable.cwu && emergencyDisable.podl[0] && emergencyDisable.podl[1]);
 }
 
 bool selectedElek() {
     return !selectedPellet()
-        && (/*storage->elekCwu || */storage->elekDom)
+        && (/*storage.elekCwu || */storage.elekDom)
         && !emergencyDisable.elek
-        && !(emergencyDisable.cwu && emergencyDisable.podl1 && emergencyDisable.podl2);
+        && !(/*emergencyDisable.cwu &&*/ emergencyDisable.podl[0] && emergencyDisable.podl[1]);
+}
+
+bool cwuHeatEnabled() {
+    return /*storage.elekCwu || */storage.pelletCwu;
 }
 
 bool cwuHeat(bool forceMax) {
@@ -54,38 +61,36 @@ bool cwuHeat(bool forceMax) {
         emergencyDisable.cwu = true; // TODO: in function, show ERR if disabled.
     }
 
-    if (emergencyDisable.cwu) {
-        return false;
-    } else if (cwuTemp >= storage->cwuTempMax) {
-        storage->cwuHeatState = false;
-    } else if (forceMax || cwuTemp < storage->cwuTempMin) {
-        storage->cwuHeatState = true;
+    int min = storage.cwuTempMin;
+    int max = storage.cwuTempMax;
+    if (forceMax) {
+        min = storage.cwuTempMax;
+        max = storage.cwuTempMax + 50;
     }
 
-    return storage->cwuHeatState && (/*storage->elekCwu || */storage->pelletCwu);
+    if (emergencyDisable.cwu) {
+        return false;
+    } else if (cwuTemp >= storage.cwuTempMax) {
+        storage.cwuHeatState = false;
+    } else if (cwuTemp < storage.cwuTempMin) {
+        storage.cwuHeatState = true;
+    }
+
+    return storage.cwuHeatState && cwuHeatEnabled();
+}
+
+bool roomHeatEnabled() {
+    return storage.elekDom || storage.pelletDom;
 }
 
 
+
 bool roomHeat() {
-    if (emergencyDisable.podl1 && emergencyDisable.podl2) {
+    if (emergencyDisable.podl[0] && emergencyDisable.podl[1]) {
         return false;
+    } else {
+        return Input::heatRoom() && roomHeatEnabled();
     }
-
-    if (Input::heatRoom()) { // TODO: always false if all room heating disabled
-        if (storage->roomHeatEnd == 0) {
-            uint64_t minTime = selectedPellet() ? storage->roomMinHeatTimePellet : storage->roomMinHeatTimeElek;
-            storage->roomHeatEnd = Time::time + minTime;
-            DBG("Room heat requested for %d min.", (int)minTime / 60000);
-        }
-        return true;
-    } else if (Time::time < storage->roomHeatEnd) {
-        return true;
-    } else if (storage->roomHeatEnd != 0) {
-        DBG("Room heat request stopped.");
-        storage->roomHeatEnd = 0;
-    }
-
-    return false;
 }
 
 void updateState()
@@ -118,16 +123,17 @@ enter:
     Relay::piec(false);
     Relay::elek(false);
     Relay::pompa_powr(false);
-    Relay::pompa_podl1(false);
-    Relay::pompa_podl2(false);
     Relay::pompa_cwu(false);
     Relay::buzzer(false);
     Zawor::powrotu.reset(-1, true);
-    Zawor::podl1.reset(-1, true);
-    Zawor::podl2.reset(-1, true);
+    Podl::podl1.pompa(false);
+    Podl::podl2.pompa(false);
+    Podl::podl1.reset(-1, true);
+    Podl::podl2.reset(-1, true);
 
 update:
-    if (Zawor::powrotu.ready() && Zawor::podl1.ready() && Zawor::podl2.ready()) {
+    if (Zawor::powrotu.ready() && Podl::podl1.ready() && Podl::podl2.ready()) {
+        // TODO: sprawdzenie połączeń: zawory, pompy, czujniki (czujniki może powinny być sprawdzane na bierząco)
         setState(stateGlobalIdle);
     }
 }

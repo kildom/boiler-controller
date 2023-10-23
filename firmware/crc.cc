@@ -1,5 +1,5 @@
 
-#include <stdint.h>
+#include "global.hh"
 #include "crc.hh"
 
 static const uint32_t crc32_tab[] = {

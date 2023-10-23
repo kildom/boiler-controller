@@ -51,4 +51,7 @@ $(OBJ_DIR)/%.c.o: ../../%.c Makefile
 	mkdir -p $(dir $@)
 	$(CC) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 
+../../firmware/autogen.inc: $(wildcard ../../firmware/*.hh) autogen.ts Makefile
+	npx ts-node-esm autogen.ts
+
 -include $(patsubst %.o,%.d,$(OBJ))

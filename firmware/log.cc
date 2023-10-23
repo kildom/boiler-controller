@@ -1,6 +1,8 @@
 
 #include <stdint.h>
 #include <string.h>
+
+#include "global.hh"
 #include "log.hh"
 #include "time.hh"
 #include "proto.hh"

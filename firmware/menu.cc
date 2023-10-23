@@ -1,6 +1,7 @@
 
 #include <limits>
 
+#include "global.hh"
 #include "utils.hh"
 #include "menu.hh"
 #include "diag.hh"
@@ -331,16 +332,16 @@ static const BoolCallbacks relayToggleCbk = {
 static bool relayInvertRead(const MenuItem* item)
 {
     auto i = (int)item->sub;
-    return storage->relay.invert & (1 << i) ? true : false;
+    return storage.relay.invert & (1 << i) ? true : false;
 }
 
 static void relayInvertWrite(const MenuItem* item, bool value)
 {
     auto i = (int)item->sub;
     if (value) {
-        storage->relay.invert |= (1 << i);
+        storage.relay.invert |= (1 << i);
     } else {
-        storage->relay.invert &= ~(1 << i);
+        storage.relay.invert &= ~(1 << i);
     }
 }
 
@@ -362,11 +363,11 @@ static bool saveStorageFunc(const MenuItem* item, char data)
 
 static const MenuItem rootList[] = {
     { "Tryby", &menuCbk, (const MenuItem[]){
-        { "Pellet C.O.", &boolCbk.base, &Storage::storage.pelletDom },
-        { "Pellet C.W.U.", &boolCbk.base, &Storage::storage.pelletCwu },
-        { "Elekt. C.O.", &boolCbk.base, &Storage::storage.elekDom },
-        //{ "Elekt. C.W.U.", &boolCbk.base, &Storage::storage.elekCwu },
-        //{ "Elekt. bez zaw. podl.", &boolCbk.base, &Storage::storage.elekBezposrPodl },
+        { "Pellet C.O.", &boolCbk.base, &storage.pelletDom },
+        { "Pellet C.W.U.", &boolCbk.base, &storage.pelletCwu },
+        { "Elekt. C.O.", &boolCbk.base, &storage.elekDom },
+        //{ "Elekt. C.W.U.", &boolCbk.base, &storage.elekCwu },
+        //{ "Elekt. bez zaw. podl.", &boolCbk.base, &storage.elekBezposrPodl },
         {}}},
     { "Praca ręczna", &menuCbk, (const MenuItem[]){
         { "Przełącz wyjście", &menuCbk, (const MenuItem[]){
@@ -396,20 +397,20 @@ static const MenuItem rootList[] = {
         {}}},
     { "Konfiguracja", &menuCbk, (const MenuItem[]){
         { "Przypisz wyjścia", &menuCbk, (const MenuItem[]){
-            { "paliwo", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[0], 16 }}},
-            { "piec", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[1], 16 }}},
-            { "elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[2], 16 }}},
-            { "pompa_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[3], 16 }}},
-            { "zaw_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[4], 16 }}},
-            { "zaw_powr_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[5], 16 }}},
-            { "zaw_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[6], 16 }}},
-            { "zaw_podl1_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[7], 16 }}},
-            { "pompa_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[8], 16 }}},
-            { "zaw_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[9], 16 }}},
-            { "zaw_podl2_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[10], 16 }}},
-            { "pompa_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[11], 16 }}},
-            { "pompa_cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[12], 16 }}},
-            { "buzzer", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.relay.map[13], 16 }}},
+            { "paliwo", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[0], 16 }}},
+            { "piec", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[1], 16 }}},
+            { "elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[2], 16 }}},
+            { "pompa_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[3], 16 }}},
+            { "zaw_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[4], 16 }}},
+            { "zaw_powr_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[5], 16 }}},
+            { "zaw_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[6], 16 }}},
+            { "zaw_podl1_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[7], 16 }}},
+            { "pompa_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[8], 16 }}},
+            { "zaw_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[9], 16 }}},
+            { "zaw_podl2_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[10], 16 }}},
+            { "pompa_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[11], 16 }}},
+            { "pompa_cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[12], 16 }}},
+            { "buzzer", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[13], 16 }}},
             {}}},
         { "Odwróć wyjścia", &menuCbk, (const MenuItem[]){
             { "paliwo", &relayInvertCbk.base, (void*)0 },
@@ -428,44 +429,44 @@ static const MenuItem rootList[] = {
             { "brzeczyk", &relayInvertCbk.base, (void*)13 },
             {}}},
         { "Przypisz wejścia", &menuCbk, (const MenuItem[]){
-            { "piec_pelet", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[0], 8 }}},
-            { "piec_powrot", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[1], 8 }}},
-            { "piec_elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[2], 8 }}},
-            { "podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[3], 8 }}},
-            { "podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[4], 8 }}},
-            { "cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &Storage::storage.temp.map[5], 8 }}},
+            { "piec_pelet", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[0], 8 }}},
+            { "piec_powrot", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[1], 8 }}},
+            { "piec_elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[2], 8 }}},
+            { "podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[3], 8 }}},
+            { "podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[4], 8 }}},
+            { "cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[5], 8 }}},
             {}}},
         { "Temperatury", &menuCbk, (const MenuItem[]){
-            { "cwuTempMin", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.cwuTempMin, 6000 }}},
-            { "cwuTempMax", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.cwuTempMax, 6500 }}},
-            { "cwuTempCritical", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.cwuTempCritical, 8000 }}},
+            { "cwuTempMin", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.cwuTempMin, 6000 }}},
+            { "cwuTempMax", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.cwuTempMax, 6500 }}},
+            { "cwuTempCritical", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.cwuTempCritical, 8000 }}},
             {}}},
         { "Zawory", &menuCbk, (const MenuItem[]){
             { "Powrotu", &menuCbk, (const MenuItem[]){
-                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_powrotu.czas_otwarcia, 60 * 60 * 1000 }}},
-                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_powrotu.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_powrotu.czas_otwarcia, 60 * 60 * 1000 }}},
+                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_powrotu.czas_min_otwarcia, 2 * 60 * 1000 }}},
                 {}}},
             { "Podłogówki 1", &menuCbk, (const MenuItem[]){
-                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.czas_otwarcia, 60 * 60 * 1000 }}},
-                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.czas_min_otwarcia, 2 * 60 * 1000 }}},
-                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl1.critical, 8000 }}},
+                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl1.czas_otwarcia, 60 * 60 * 1000 }}},
+                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl1.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl1.critical, 8000 }}},
                 {}}},
             { "Podłogówki 2", &menuCbk, (const MenuItem[]){
-                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.czas_otwarcia, 60 * 60 * 1000 }}},
-                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.czas_min_otwarcia, 2 * 60 * 1000 }}},
-                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.zaw_podl2.critical, 8000 }}},
+                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl2.czas_otwarcia, 60 * 60 * 1000 }}},
+                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl2.czas_min_otwarcia, 2 * 60 * 1000 }}},
+                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl2.critical, 8000 }}},
                 {}}},
             {}}},
         { "Elektryczny", &menuCbk, (const MenuItem[]){
-            { "Czas startu", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekStartupTime, 60 * 60 * 1000 }}},
-            { "Czas oczek. na stop", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekOffTime, 60 * 60 * 1000 }}},
-            { "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.roomMinHeatTimeElek, 24 * 60 * 60 * 1000 }}},
-            { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.elekCritical, 8000 }}},
+            { "Czas startu", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.elekStartupTime, 60 * 60 * 1000 }}},
+            { "Czas oczek. na stop", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.elekOffTime, 60 * 60 * 1000 }}},
+            //{ "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.roomMinHeatTimeElek, 24 * 60 * 60 * 1000 }}},
+            { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.elekCritical, 8000 }}},
             {}}},
         { "Pellet", &menuCbk, (const MenuItem[]){
-            { "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &Storage::storage.roomMinHeatTimePellet, 24 * 60 * 60 * 1000 }}},
+            //{ "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.roomMinHeatTimePellet, 24 * 60 * 60 * 1000 }}},
             {}}},
-        //{ "Załącz drugą podl.", &boolCbk.base, &Storage::storage.podl2 },
+        //{ "Załącz drugą podl.", &boolCbk.base, &storage.podl2 },
         {}}},
     { "Zapisz do pamięci", (const MenuItemCallbacks[]){{ saveStorageFunc }}},
     {}

@@ -1,5 +1,6 @@
 #include  <algorithm>
 
+#include "global.hh"
 #include "coroutines.hh"
 #include "relays.hh"
 #include "time.hh"
@@ -124,6 +125,20 @@ void Zawor::update()
 
     } else if ((event & 0xF) == RESET) { // Reset zaworu
 
+        /* TODO: If new reset event arrived:
+                  FULL
+            DIR NOW NEW
+             -   -   -   skip new event
+             -   -   F   convert new event to FULL and stop this reset allowing new event to be executed
+             -   F   -   skip new event
+             -   F   F   skip new event
+             !   -   -   do nothing, new event will be executed after this one
+             !   -   F   convert new event to FULL and stop this reset allowing new event to be executed
+             !   F   -   convert new event to FULL and stop this reset allowing new event to be executed
+             !   F   F   convert new event to FULL and stop this reset allowing new event to be executed
+
+        */
+
         // Zapamiętaj parametry eventu i wyczyść event
         direction = (event & FLAG_PLUS) ? +1 : -1;
         full = (event & FLAG_FULL) != 0;
@@ -205,6 +220,7 @@ void Zawor::update()
 
 void Zawor::reset(int new_direction, bool full)
 {
+    // TODO: skip non-full reset if already in place
     event = RESET | (new_direction > 0 ? FLAG_PLUS : FLAG_MINUS) | (full ? FLAG_FULL : 0);
     current_signal = 0;
     Time::schedule(0);
@@ -250,6 +266,8 @@ void Zawor::set_relays(int new_direction)
     }
 }
 
-Zawor Zawor::powrotu(::storage->zaw_powrotu, Relay::ZAW_POWR, Relay::ZAW_POWR_PLUS);
-Zawor Zawor::podl1(::storage->zaw_podl1, Relay::ZAW_PODL1, Relay::ZAW_PODL1_PLUS);
-Zawor Zawor::podl2(::storage->zaw_podl2, Relay::ZAW_PODL2, Relay::ZAW_PODL2_PLUS);
+Zawor Zawor::powrotu(::storage.zaw_powrotu, Relay::ZAW_POWR, Relay::ZAW_POWR_PLUS);
+Zawor Zawor::podl1(::storage.zaw_podl1, Relay::ZAW_PODL1, Relay::ZAW_PODL1_PLUS);
+Zawor Zawor::podl2(::storage.zaw_podl2, Relay::ZAW_PODL2, Relay::ZAW_PODL2_PLUS);
+Zawor* Zawor::podl[2] = { &podl1, &podl2 };
+

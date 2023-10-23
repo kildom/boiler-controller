@@ -1,3 +1,4 @@
+#include "global.hh"
 #include "diag.hh"
 #include "menu.hh"
 

@@ -1,4 +1,5 @@
 
+#include "global.hh"
 #include "storage.hh"
 #include "temp.hh"
 
@@ -12,7 +13,7 @@ static int rawToTemp(int x)
 
 int Temp::get(Index index)
 {
-    int indexLo = storage->temp.map[index];
+    int indexLo = storage.temp.map[index];
     auto raw = analog_input(indexLo);
     auto temp = rawToTemp(raw);
     if (temp < -1000 || temp > 11000) {

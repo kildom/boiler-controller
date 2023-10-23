@@ -86,7 +86,6 @@ let stateFormat = {
     R12: e => formatOnOff(e, state.R12),
     IN0: e => formatOnOff(e, state.IN0),
     IN1: e => formatOnOff(e, state.IN1),
-    IN2: e => formatOnOff(e, state.IN2),
 
     Czas: e => formatTime(e, state.Time),
 }

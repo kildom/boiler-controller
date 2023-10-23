@@ -1,4 +1,5 @@
 
+#include "global.hh"
 #include "time.hh"
 #include "deque.hh"
 #include "storage.hh"
@@ -42,7 +43,7 @@ void Time::update_start()
     auto now = real_time();
     delta = now - time;
     time = now;
-    storage->time = time;
+    storage.time = time;
     scheduled_update = now + PERIODIC_TIMEOUT;
 
     auto timer = timers.get_first<Timer>();

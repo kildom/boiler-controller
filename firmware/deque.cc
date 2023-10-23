@@ -1,5 +1,5 @@
 
-#include <stdint.h>
+#include "global.hh"
 #include "deque.hh"
 
 bool Deque::add(DequeItem *item)

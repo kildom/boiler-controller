@@ -29,6 +29,7 @@ public:
     static inline int podl1() { return get(PODL1); }
     static inline int podl2() { return get(PODL2); }
     static inline int cwu() { return get(CWU); }
+    static inline int podl(int index) { return get(index == 0 ? PODL1 : PODL2); }
 
     static int get(Index index);
 

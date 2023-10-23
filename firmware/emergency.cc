@@ -1,11 +1,13 @@
 
 #include <utility>
 
+#include "global.hh"
 #include "menu.hh"
 #include "temp.hh"
 #include "log.hh"
 #include "storage.hh"
 #include "emergency.hh"
+#include "utils.hh"
 
 int const MIN_LEVEL = -0x80000000;
 
@@ -26,37 +28,7 @@ static char* formatTemp(int temp) {
 }
 
 
-class DelayOnCondition {
-/* ▁▁▁▁▇▁▁▁▇▇▇▇▇▇▇▇▁▁▁▁▁▁  input
- *        ▕ -T- ▏
- * ▁▁▁▁▁▁▁▁▁▁▁▁▁▇▇▇▁▁▁▁▁▁  output
- */
-private:
-    uint64_t onTime;
-
-public:
-    DelayOnCondition(): onTime(Time::time) {}
-
-    bool get(bool input, int time) {
-        if (input) {
-            if (Time::time >= onTime + time) {
-                return true;
-            }
-        } else {
-            onTime = Time::time;
-        }
-        return false;
-    }
-};
-
-class DelayOffCondition {
-/* ▁▁▁▁▇▁▁▁▁▁▁▇▇▇▇▇▇▇▇▁▁▁  input
- *    ▕ -T- ▏▕ -T- ▏
- * ▁▁▁▁▇▇▇▇▇▁▁▇▇▇▇▇▇▇▇▁▁▁  output
- */
-};
-
-class Fault: private DequeItem {
+class Fault: private DequeItem {  // TODO: Zapisz stan wszystkich faultów, żeby po braku zasilania stan się przywrócił
 public:
     enum State {
         INACTIVE = 0,
@@ -78,7 +50,10 @@ public:
         state(INACTIVE),
         temp(Temp::INVALID),
         message(message),
-        id(lastId++) {}
+        id(lastId++)
+    {
+        Storage::init();
+    }
 
     Fault& update(bool value) {
         if (value) {
@@ -124,15 +99,15 @@ void emergencyUpdate() {
 
     static Fault elekTooHigh("Piec elekt. - nieprawidłowa temp.");
     elekTooHigh
-        .update(!valid(Temp::piecElek(), storage->elekCritical))
+        .update(!valid(Temp::piecElek(), storage.elekCritical))
         .setMax(Temp::piecElek());
 
     static Fault podl1Awaria("Podl. 1 - awaria");
     static DelayOnCondition delayPodl1;
     podl1Awaria
         .update(
-            (storage->pelletDom && delayPodl1.get(Zawor::podl1.isFullyOpen() && Temp::piecPelet() > storage->podlFaultPiecTemp, storage->podlFaultDelay))
-            || !valid(Temp::podl1(), storage->zaw_podl1.critical)
+            (storage.pelletDom && delayPodl1.get(Zawor::podl1.isFullyOpen() && Temp::piecPelet() > storage.podlFaultPiecTemp, storage.podlFaultDelay)) // TODO: use Podl::podl1??
+            || !valid(Temp::podl1(), storage.zaw_podl1.critical)
         )
         .setMax(Temp::podl1());
 
@@ -140,13 +115,13 @@ void emergencyUpdate() {
     static DelayOnCondition delayPodl2;
     podl2Awaria
         .update(
-            (storage->pelletDom && delayPodl2.get(Zawor::podl2.isFullyOpen() && Temp::piecPelet() > storage->podlFaultPiecTemp, storage->podlFaultDelay))
-            || !valid(Temp::podl2(), storage->zaw_podl2.critical)
+            (storage.pelletDom && delayPodl2.get(Zawor::podl2.isFullyOpen() && Temp::piecPelet() > storage.podlFaultPiecTemp, storage.podlFaultDelay))
+            || !valid(Temp::podl2(), storage.zaw_podl2.critical)
         )
         .setMax(Temp::podl2());
 
     emergencyDisable.elek = elekTooHigh.get();
-    emergencyDisable.podl1 = podl1Awaria.get();
-    emergencyDisable.podl2 = podl2Awaria.get();
+    emergencyDisable.podl[0] = podl1Awaria.get();
+    emergencyDisable.podl[1] = podl2Awaria.get();
 }
 

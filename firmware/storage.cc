@@ -13,8 +13,9 @@
 #include "autogen.inc"
 
 #define PERSISTENT_SIZE offsetof(Storage, _persistent_end)
-#define STORAGE_MAGIC1 (0x5B395F05 + (PERSISTENT_SIZE << 12))
-#define STORAGE_MAGIC2 (0x708ADBC9 + (PERSISTENT_SIZE << 12))
+#define STORAGE_MAGIC_BASE 0x5B495F05
+#define STORAGE_MAGIC1 ((uint32_t)((STORAGE_MAGIC_BASE ^ STORAGE_MAGIC1_BASE) + (PERSISTENT_SIZE << 12)))
+#define STORAGE_MAGIC2 ((uint32_t)((STORAGE_MAGIC_BASE ^ STORAGE_MAGIC2_BASE) + (PERSISTENT_SIZE << 12)))
 
 #define SLOT0_DIRTY 1
 #define SLOT1_DIRTY 2
@@ -40,52 +41,7 @@ static const Storage storageInit = {
     .temp = {
         .map = { 0, 1, 2, 3, 4, 5, },
     },
-    .zaw_powrotu = {
-        .czas_otwarcia = 2 * 60 * 1000,
-        .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
-        .czas_przerwy = 10 * 1000,
-        .czas_pracy_max = 4 * 1000,
-        .czas_pracy_min = 2 * 1000,
-        .korekta = 10,
-        .temp = 5500,
-        .critical = 5000,
-    },
-    .zaw_podl1 = {
-        .czas_otwarcia = 2 * 60 * 1000,
-        .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
-        .czas_przerwy = 10 * 1000,
-        .czas_pracy_max = 4 * 1000,
-        .czas_pracy_min = 2 * 1000,
-        .korekta = 10,
-        .temp = 3300,
-        .critical = 4500,
-    },
-    .zaw_podl2 = {
-        .czas_otwarcia = 2 * 60 * 1000,
-        .czas_min_otwarcia = 2 * 60 * 1000 / 100 * 3,
-        .czas_przerwy = 10 * 1000,
-        .czas_pracy_max = 4 * 1000,
-        .czas_pracy_min = 2 * 1000,
-        .korekta = 10,
-        .temp = 3300,
-        .critical = 4500,
-    },
-    .pelletDom = false,
-    .pelletCwu = false,
-    .elekDom = true, // TODO: set to false
-    //.elekCwu = false,
-    //.elekBezposrPodl = false,
-    //.podl2 = true,
-    .elekStartupTime = 4 * 60 * 1000,
-    .elekCritical = 6500,
-    .elekOffTime = 60 * 1000,
-    .cwuTempMin = 3500,
-    .cwuTempMax = 5000,
-    .cwuTempCritical = 6500,
-    //.roomMinHeatTimePellet = 2 * 60 * 60 * 1000,
-    //.roomMinHeatTimeElek = 15 * 60 * 1000,
-    //.podlFaultDelay = 2 * 60 * 1000,
-    .podlFaultPiecTemp = 6000,
+    STORAGE_INITIAL
     .crc = 0,
     .magic2 = STORAGE_MAGIC2,
     // ---------------- Non-permanent data

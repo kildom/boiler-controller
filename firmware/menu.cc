@@ -9,6 +9,8 @@
 #include "storage.hh"
 #include "inputs.hh"
 
+#include "autogen.inc"
+
 static const int MAX_LINE_LEN = 128;
 
 static char line[MAX_LINE_LEN];
@@ -284,8 +286,9 @@ static const IntCallbacks<T> intCbk = {
     { intGenericFunc<T>, intGenericText<T> }, intRead<T>, intWrite<T>, IntCallbacks<T>::INT,
 };
 
-static const IntCallbacks<int> tempCbk = {
-    { intGenericFunc<int>, intGenericText<int> }, intRead<int>, intWrite<int>, IntCallbacks<int>::TEMP,
+template<typename T>
+static const IntCallbacks<T> tempCbk = {
+    { intGenericFunc<T>, intGenericText<T> }, intRead<T>, intWrite<T>, IntCallbacks<T>::TEMP,
 };
 
 static const IntCallbacks<int> timeCbk = {
@@ -362,13 +365,8 @@ static bool saveStorageFunc(const MenuItem* item, char data)
 // The menu
 
 static const MenuItem rootList[] = {
-    { "Tryby", &menuCbk, (const MenuItem[]){
-        { "Pellet C.O.", &boolCbk.base, &storage.pelletDom },
-        { "Pellet C.W.U.", &boolCbk.base, &storage.pelletCwu },
-        { "Elekt. C.O.", &boolCbk.base, &storage.elekDom },
-        //{ "Elekt. C.W.U.", &boolCbk.base, &storage.elekCwu },
-        //{ "Elekt. bez zaw. podl.", &boolCbk.base, &storage.elekBezposrPodl },
-        {}}},
+    STORAGE_MENU
+    { "Zapisz do pamięci", (const MenuItemCallbacks[]){{ saveStorageFunc }}},
     { "Praca ręczna", &menuCbk, (const MenuItem[]){
         { "Przełącz wyjście", &menuCbk, (const MenuItem[]){
             { "paliwo", &relayToggleCbk.base, (void*)0 },
@@ -395,7 +393,7 @@ static const MenuItem rootList[] = {
             { "cwu", &tempInputCbk, (void*)5 },
             {}}},
         {}}},
-    { "Konfiguracja", &menuCbk, (const MenuItem[]){
+    { "Wejścia/Wyjścia", &menuCbk, (const MenuItem[]){
         { "Przypisz wyjścia", &menuCbk, (const MenuItem[]){
             { "paliwo", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[0], 16 }}},
             { "piec", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[1], 16 }}},
@@ -436,39 +434,7 @@ static const MenuItem rootList[] = {
             { "podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[4], 8 }}},
             { "cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[5], 8 }}},
             {}}},
-        { "Temperatury", &menuCbk, (const MenuItem[]){
-            { "cwuTempMin", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.cwuTempMin, 6000 }}},
-            { "cwuTempMax", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.cwuTempMax, 6500 }}},
-            { "cwuTempCritical", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.cwuTempCritical, 8000 }}},
-            {}}},
-        { "Zawory", &menuCbk, (const MenuItem[]){
-            { "Powrotu", &menuCbk, (const MenuItem[]){
-                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_powrotu.czas_otwarcia, 60 * 60 * 1000 }}},
-                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_powrotu.czas_min_otwarcia, 2 * 60 * 1000 }}},
-                {}}},
-            { "Podłogówki 1", &menuCbk, (const MenuItem[]){
-                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl1.czas_otwarcia, 60 * 60 * 1000 }}},
-                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl1.czas_min_otwarcia, 2 * 60 * 1000 }}},
-                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl1.critical, 8000 }}},
-                {}}},
-            { "Podłogówki 2", &menuCbk, (const MenuItem[]){
-                { "Czas otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl2.czas_otwarcia, 60 * 60 * 1000 }}},
-                { "Czas min. otwarcia", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl2.czas_min_otwarcia, 2 * 60 * 1000 }}},
-                { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int>[]) {{ &storage.zaw_podl2.critical, 8000 }}},
-                {}}},
-            {}}},
-        { "Elektryczny", &menuCbk, (const MenuItem[]){
-            { "Czas startu", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.elekStartupTime, 60 * 60 * 1000 }}},
-            { "Czas oczek. na stop", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.elekOffTime, 60 * 60 * 1000 }}},
-            //{ "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.roomMinHeatTimeElek, 24 * 60 * 60 * 1000 }}},
-            { "Temp. krytyczna", &tempCbk.base, (const IntItemInfo<int16_t>[]) {{ &storage.elekCritical, 8000 }}},
-            {}}},
-        { "Pellet", &menuCbk, (const MenuItem[]){
-            //{ "Min. czas pracy C.O.", &timeCbk.base, (const IntItemInfo<int>[]) {{ &storage.roomMinHeatTimePellet, 24 * 60 * 60 * 1000 }}},
-            {}}},
-        //{ "Załącz drugą podl.", &boolCbk.base, &storage.podl2 },
         {}}},
-    { "Zapisz do pamięci", (const MenuItemCallbacks[]){{ saveStorageFunc }}},
     {}
 };
 

@@ -11,21 +11,21 @@ public:
 
     struct Storage {
         // -> BEGIN Zawor::Storage
-        // Czas pełnego otwarcia zaworu, time_ms, default: 2_min, range: 1_sec..1_h
+        // Czas pełnego otwarcia zaworu, time, default: 2_min, range: 1_sec..1_h
         int czas_otwarcia;
-        // Czas min. otwarcia zaworu, time_ms, default: 4_sec, range: 0..1_h
+        // Czas min. otwarcia zaworu, time, default: 4_sec, range: 0..1_h
         int czas_min_otwarcia;
-        // Czas przerwy, time_ms, default: 15_sec, range: 1_sec..10_min
+        // Czas przerwy, time, default: 15_sec, range: 1_sec..10_min
         int czas_przerwy;
-        // Czas pracy, time_ms, default: 2_sec, range: 1_sec..10_min
+        // Czas pracy, time, default: 2_sec, range: 1_sec..10_min
         int czas_pracy_max;
-        // Min. dopuszczalny czas pracy., time_ms, default: 1_sec, range: 1_sec..10_min
+        // Min. dopuszczalny czas pracy., time, default: 1_sec, range: 1_sec..10_min
         int czas_pracy_min;
-        // Korekta czasu działania zaw., time_ms, default: 0_sec, range: -1_sec..+1_sec
+        // Korekta czasu działania zaw., time, default: 0_sec, range: -1_sec..+1_sec
         int16_t korekta;
         // Temperatura zadana, temp, default: 35_deg, range: 20_deg..80_deg
         int16_t temp;
-        // Histereza, default: temp, default: 1_deg, range: 0..10_deg
+        // Histereza, temp, default: temp, default: 1_deg, range: 0..10_deg
         int16_t hist;
         // Różnica temp. ster. porporcjonalnego, temp, default: 2_deg, range: 0..20_deg
         int16_t proportionalDiff;

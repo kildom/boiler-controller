@@ -15,19 +15,6 @@ struct Storage {
 
     // -> BEGIN
 
-    // -> Konfiguracja -> Zaw. powrotu
-    Zawor::Storage zaw_powrotu;
-    // -> DEFAULT zaw_powrotu.temp 56_deg
-    // -> DEFAULT zaw_powrotu.hist 1_deg
-    // -> DEFAULT zaw_powrotu.proportionalDiff 3_deg
-    // -> DEFAULT zaw_powrotu.critical 50_deg
-
-    // -> Konfiguracja -> Zaw. podl. 1
-    Zawor::Storage zaw_podl1;
-
-    // -> Konfiguracja -> Zaw. podl. 2
-    Zawor::Storage zaw_podl2;
-
     // -> Tryby
     // Pellet C.O., default: false
     bool pelletDom;
@@ -41,6 +28,19 @@ struct Storage {
     //bool elekBezposrPodl; - always true
     // Włącz drugą podłogówkę, default: true
     //bool podl2;
+
+    // -> Konfiguracja -> Zaw. powrotu
+    Zawor::Storage zaw_powrotu;
+    // -> DEFAULT zaw_powrotu.temp 56_deg
+    // -> DEFAULT zaw_powrotu.hist 1_deg
+    // -> DEFAULT zaw_powrotu.proportionalDiff 3_deg
+    // -> DEFAULT zaw_powrotu.critical 50_deg
+
+    // -> Konfiguracja -> Zaw. podl. 1
+    Zawor::Storage zaw_podl1;
+
+    // -> Konfiguracja -> Zaw. podl. 2
+    Zawor::Storage zaw_podl2;
 
     // -> Konfiguracja -> Elektryczny
     // Czas startu, time, default: 1_min, range: 0..30_min

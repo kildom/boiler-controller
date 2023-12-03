@@ -22,7 +22,7 @@ constexpr int operator ""_deg(unsigned long long x) { return (int)x * 100; };
 
 static struct GlobalInit {
     GlobalInit() {
-        global_init();
+        init();
     }
     void init();
 } _global_init_call;

@@ -215,4 +215,3 @@ fs.writeFileSync('../../firmware/autogen.inc', Object.entries(defines).map(x => 
 //console.log(structures);
 //console.log(defaults);
 //console.log(categoriesRoot.sub);
-

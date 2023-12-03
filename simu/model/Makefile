@@ -1,15 +1,15 @@
 
-CLANG_HOME = /home/doki/my/ZeroTierOne-1.10.4/tools/wasi-sdk-19.0
+CLANG_HOME = ../../exttools/wasi-sdk
 
 TARGET = ../web/model.wasm
-BUILD_TYPE := debug
-#BUILD_TYPE := release
+#BUILD_TYPE := debug
+BUILD_TYPE := release
 
 OBJ_DIR := obj
 
 ALLFLAGS := -fno-exceptions
 
-CFLAGS := -I../../lowlevel -I../../firmware
+CFLAGS := -I../../lowlevel -I../../firmware -DSIMULATION_LEVEL=2
 
 LDFLAGS := -mexec-model=reactor
 
@@ -33,21 +33,22 @@ all: $(TARGET)
 clean:
 	rm -Rf $(OBJ_DIR)
 	rm -f $(TARGET)
+	rm -f ../../firmware/autogen.inc
 
 $(TARGET): $(OBJ) Makefile
 	mkdir -p $(dir $@)
 	$(CXX) $(LDFLAGS) $(ALLFLAGS) $(OBJ) -o $@
 	npx ts-node-esm build-struct.ts
 
-$(OBJ_DIR)/%.cpp.o: ../../%.cpp Makefile
+$(OBJ_DIR)/%.cpp.o: ../../%.cpp Makefile | ../../firmware/autogen.inc
 	mkdir -p $(dir $@)
 	$(CXX) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 
-$(OBJ_DIR)/%.cc.o: ../../%.cc Makefile
+$(OBJ_DIR)/%.cc.o: ../../%.cc Makefile | ../../firmware/autogen.inc
 	mkdir -p $(dir $@)
 	$(CXX) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 
-$(OBJ_DIR)/%.c.o: ../../%.c Makefile
+$(OBJ_DIR)/%.c.o: ../../%.c Makefile | ../../firmware/autogen.inc
 	mkdir -p $(dir $@)
 	$(CC) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 

@@ -7,6 +7,8 @@
 
 
 struct State {
+
+    int stateBegin;
     // BEGIN STATE
 
     // Parametry symulacji
@@ -106,6 +108,7 @@ struct State {
     bool   IN1;         // in    Input 1 - podajnik pelletu
 
     // END STATE
+    int stateEnd;
 
     ModelZaworu modZ0;
     ModelZaworu modZ1;

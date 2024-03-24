@@ -1,3 +1,4 @@
+import { ModelAccess } from "./model-comm.js";
 
 
 export const COMM_PORT = 0;
@@ -9,7 +10,7 @@ export interface ModelMessage {
     data: Uint8Array;
 };
 
-export class ModelWorker {
+export class ModelWorker implements ModelAccess {
 
     private worker: Worker;
 

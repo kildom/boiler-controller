@@ -109,7 +109,6 @@ void steps(int count, double maxStepTime)
 
 enum PacketType {
     EXECUTE = 1,
-    GET_STATE = 2,
     SET_STATE = 3,
     DIAG_RECV = 4,
     DIAG_SEND = 5,
@@ -117,19 +116,21 @@ enum PacketType {
 };
 
 static const uint32_t PACKET_HEADER_MAGIC = 0xF6A8885A;
-static const uint32_t PACKET_HEADER_SIZE = 12;
+static const uint32_t PACKET_HEADER_SIZE = 8;
 
 union Packet {
     struct {
+        // Common
         uint32_t magic;
         uint8_t type;
         uint8_t size;
     };
     struct {
+        // Execute
         uint32_t _rsv1;
         uint16_t _rsv2;
         uint16_t count;
-        float maxStepTime;
+        uint32_t stateCrc;
     };
     struct {
         uint32_t _rsv3;
@@ -137,10 +138,9 @@ union Packet {
         uint16_t offset;
     };
     struct {
-        uint8_t rawHeader[PACKET_HEADER_SIZE];
         uint8_t data[255];
     };
-    uint8_t raw[PACKET_HEADER_SIZE + 255];
+    uint8_t raw[256];
 };
 
 static Packet packet;

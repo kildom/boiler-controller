@@ -40,6 +40,8 @@ Hardware:
 * Case
   * https://allegro.pl/oferta/obudowa-kradex-z95j-12156497710
   * https://allegro.pl/oferta/z-90j-obudowa-z-tworzywa-225-x-175-x-80-mm-jasna-11970558491
+* Current
+  * https://www.tme.eu/pl/details/ax-0500/przekladniki-pradowe/talema/
  
 Old ideas for GUI:
 * https://botland.com.pl/moduly-nanopi/14635-nanopi-neo-v14-allwinner-h3-quad-core-12ghz-512mb-ram-bez-zlaczy-5904422377656.html

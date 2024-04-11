@@ -2,7 +2,7 @@
 Ideas for GUI:
 * node.js or deno HTTP server: serving static pages and do proxy between UART and WebSockets (packet level multiplexing, so multiple clients can run at once)
 * Remote control:
-  * Cloudflare for remote tunneling (if not expensive domain): https://www.youtube.com/watch?v=ZvIdFs3M5ic
+  * https://zrok.io/ - tunneling with static domain name
 
 
 Hardware:

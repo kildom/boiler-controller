@@ -109,8 +109,6 @@ struct State {
 
     // END STATE
 
-    double timeoutLeft; // Number of seconds left to the next timeout event
-
     ModelZaworu modZ0;
     ModelZaworu modZ1;
     ModelZaworu modZ2;
@@ -223,9 +221,6 @@ struct State {
         // Wejścia
         IN0 = 0;         // in    Input 0 - ster. pokojowy
         IN1 = 0;         // in    Input 1 - podajnik pelletu
-
-        // Inne
-        timeoutLeft = 0.0;
     }
 
     void step(double time)

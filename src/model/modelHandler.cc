@@ -4,6 +4,7 @@
 #include <stddef.h>
 
 #include <algorithm>
+#include <string>
 
 #include "../control/controlInterface.hh"
 
@@ -11,52 +12,166 @@
 #include "modelHandler.hh"
 
 enum CmdType {
-    CMD_DIAG = 0xEE,
+    TYPE_DIAG = 0x00,
+    TYPE_READ = 0x20,
+    TYPE_WRITE = 0x40,
+    TYPE_RUN = 0x60,
+    TYPE_MASK = 0xE0,
+};
+
+struct Packet
+{
+    uint8_t type;
+    uint8_t dataSize;
+    union
+    {
+        struct
+        {
+            uint16_t offset;
+            uint8_t data[253];
+        } write;
+        struct
+        {
+            uint8_t data[255];
+        } diag;
+        struct
+        {
+            uint8_t data[255];
+        } read;
+        struct
+        {
+            uint16_t maxStepTimeMs;
+            uint16_t maxSimuTimeMs;
+            uint8_t resetTimeState;
+        } run;
+        struct
+        {
+            uint8_t data[255];
+        } runResponse;
+    };
 };
 
 State modelState;
 
-uint32_t rxBuffer[(2 + 255 + 3) / 4];
-size_t rxBufferLength = 0;
-uint32_t txBuffer[(2 + 255 + 3) / 4];
-size_t txBufferLength = 0;
+static uint8_t diagBuffer[2048 + 2];
+static size_t diagBufferLength = 2;
+static uint8_t* const stateBuffer = (uint8_t*)&modelState;
+static Packet packet;
+static uint8_t* const packetBuffer = (uint8_t*)&packet;
+static size_t packetSize = 0;
+static double timeoutLeft;
 
-uint8_t diagBuffer[2048 + 2];
-size_t diagBufferLength = 0;
+void modelEnsureStartup() {
+    static bool startupDone = false;
+    if (!startupDone) {
+        startup_event();
+        startupDone = true;
+    }
+}
 
-void modelDataOnReceived(const uint8_t* data, size_t size)
+void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeState)
 {
-    /*
-    Handler is responsible for running the simulation at specific speed.
-    It will run it in this function.
-    It will adjust the speed parameter if to fast.
-    When running, it should check if there are data from different sources, e.g. comm UART
-    Call modelCommReceive() to get incoming comm data and call comm_event() if any.
-    Sender will send real time in incoming data.
-    Header (request and response):
-        u8 cmd
-        u8 packetSize
-    Packets:
-        Diag:
-            u8[] data
-            response:
-                u8[] data - diag data
-        Write:
-            u16 offset
-            u8[] data
-            response:
-                empty
-        Read:
-            u16 offset
-            u16 size
-            response:
-                u8[] data
-        Run:
-            double maxStepTime [sec]
-            double realTime [sec]
-            response:
-                u8[] data - diag data
-    */
+    static uint32_t lastRealTimeValue;
+    static double simulationRunTime = 0.0;
+    static double expectedSimulationRunTime = 0.0;
+
+    uint32_t realTimeValue = modelPortTime();
+
+    if (resetTimeState) {
+        lastRealTimeValue = realTimeValue;
+        expectedSimulationRunTime = simulationRunTime;
+    }
+
+    uint32_t realTimeDelta = (realTimeValue - lastRealTimeValue) & ((((1 << (TIME_BITS - 1)) - 1) << 1) + 1);
+    lastRealTimeValue = realTimeValue;
+
+    expectedSimulationRunTime += (double)realTimeDelta * 0.001;
+
+    double runTimeToDo = std::min((double)maxSimuTimeMs * 0.001, expectedSimulationRunTime - simulationRunTime);
+
+    if (runTimeToDo < 0.001) {
+        return;
+    }
+
+    double simulationTimeStart = modelState.Time;
+    double simulationTimeEnd = modelState.Time + runTimeToDo * modelState.speed;
+    double maxStepTime = (double)maxStepTimeMs * 0.001;
+
+    modelEnsureStartup();
+    int realTimeQueryCounter = 0;
+
+    while (modelState.Time < simulationTimeEnd && modelPortIsEmpty()) {
+        if (timeoutLeft <= maxStepTime) {
+            if (timeoutLeft > 0.00000001) {
+                modelState.step(timeoutLeft);
+            }
+            timeoutLeft = (double)PERIODIC_TIMEOUT / 1000.0;
+            timeout_event();
+        } else {
+            timeoutLeft -= maxStepTime;
+            modelState.step(maxStepTime);
+            simulationRunTime += maxStepTime / modelState.speed;
+        }
+        if (realTimeQueryCounter == 0) {
+            realTimeQueryCounter = 20;
+            realTimeValue = modelPortTime();
+            realTimeDelta = (realTimeValue - lastRealTimeValue) & ((((1 << (TIME_BITS - 1)) - 1) << 1) + 1);
+            if (realTimeDelta > maxSimuTimeMs) {
+                break;
+            }
+        }
+        realTimeQueryCounter--;
+    }
+}
+
+void modelPacketReceived()
+{
+    switch (packet.type & TYPE_MASK)
+    {
+    case TYPE_DIAG:
+        modelEnsureStartup();
+        diag_event(packet.diag.data, packet.dataSize);
+        packet.dataSize = 0;
+        modelPortAppend(packetBuffer, 2);
+        modelPortSend();
+        break;
+
+    case TYPE_READ:
+        for (size_t offset = 0; offset <= sizeof(State); offset += 255) {
+            packet.dataSize = std::min((size_t)255, sizeof(State) - offset);
+            std::memcpy(packet.read.data, &stateBuffer[offset], packet.dataSize);
+            modelPortAppend(packetBuffer, (size_t)packet.dataSize + 2);
+        }
+        modelPortSend();
+        break;
+  
+    case TYPE_WRITE:
+        std::memcpy(&stateBuffer[packet.write.offset], packet.write.data, packet.dataSize - 2);
+        packet.dataSize = 0;
+        modelPortAppend(packetBuffer, 2);
+        modelPortSend();
+        break;
+
+    case TYPE_RUN:
+        simulate(packet.run.maxStepTimeMs, packet.run.maxSimuTimeMs, !!packet.run.resetTimeState);
+        packet.dataSize = sizeof(double);
+        std::memcpy(&packet.runResponse.data, &modelState.Time, sizeof(double));
+        modelPortAppend(packetBuffer, 2 + sizeof(double));
+        modelPortSend();
+        break;
+    }
+}
+
+void modelPortEvent(const uint8_t* data, size_t size)
+{
+    const uint8_t* end = data + size;
+    while (data < end) {
+        packetBuffer[packetSize++] = *data++;
+        if (packetSize >= 2 && packetSize >= (size_t)packet.dataSize + 2) {
+            modelPacketReceived();
+            packetSize = 0;
+        }
+    }
 }
 
 void global_init(); // Implemented by low-level
@@ -127,7 +242,7 @@ uint32_t get_time()
 void timeout(uint32_t t)
 {
     int32_t diff = t - get_time();
-    modelState.timeoutLeft = (double)diff * 0.001;
+    timeoutLeft = (double)diff * 0.001;
 }
 
 void store_read(int slot, uint8_t* buffer, int size); // Implemented by low-level
@@ -140,7 +255,7 @@ void comm_send(); // Implemented by low-level
 
 int diag_free()
 {
-    int free = debugPortFree();
+    int free = modelPortFree() - sizeof(State) - (sizeof(State) + 254) / 255 * 2 - 32;
     int freeFullPackets = free / 257;
     int freeRemaining = free % 257 - 2;
     if (freeRemaining < 0) freeRemaining = 0;
@@ -158,10 +273,11 @@ void diag_send()
     size_t index = 2;
     while (index < diagBufferLength) {
         size_t length = std::min(diagBufferLength - index, (size_t)255);
-        diagBuffer[index - 2] = CMD_DIAG;
+        diagBuffer[index - 2] = TYPE_DIAG;
         diagBuffer[index - 1] = length;
-        debugPortAppend(&diagBuffer[index - 2], 2 + length);
+        modelPortAppend(&diagBuffer[index - 2], 2 + length);
+        index += length;
     }
-    debugPortSend();
+    modelPortSend();
     diagBufferLength = 2;
 }

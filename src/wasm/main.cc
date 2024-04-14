@@ -5,7 +5,6 @@
 
 #include "../control/controlInterface.hh"
 #include "../model/modelHandler.hh"
-//#include "log.hh"
 
 #define WASM_EXPORT(name) \
     __attribute__((used)) \
@@ -16,7 +15,6 @@
     __attribute__((used)) \
     __attribute__((import_name(#name)))
 
-static std::basic_string<uint8_t> commReceiveBuffer(0);
 static std::basic_string<uint8_t> commSendBuffer(0);
 static std::basic_string<uint8_t> debugReceiveBuffer(0);
 static std::basic_string<uint8_t> debugSendBuffer(0);
@@ -57,49 +55,63 @@ void comm_send()
     commSendBuffer.clear();
 }
 
-WASM_IMPORT(modelDataSend)
-void modelDataSend(const uint8_t* data, size_t size);
-
-WASM_EXPORT(modelDataOnReceived)
-void modelDataOnReceived(const uint8_t* data, size_t size);
-
 WASM_EXPORT(commRecv)
-uint8_t* commRecv(int size)
+void commRecv(uint8_t* data, int size)
 {
-    auto oldSize = commReceiveBuffer.size();
-    commReceiveBuffer.resize(oldSize + size);
-    return commReceiveBuffer.data() + oldSize;
+    modelEnsureStartup();
+    comm_event(data, size);
 }
 
-int debugPortFree()
+
+int modelPortFree()
 {
-    return 2048 - debugSendBuffer.size();
+    return 3 * 1024 - debugSendBuffer.size();
 }
 
-void debugPortAppend(uint8_t data)
+bool modelPortIsEmpty()
+{
+    return debugSendBuffer.empty();
+}
+
+void modelPortAppend(uint8_t data)
 {
     debugSendBuffer.push_back(data);
 }
 
-void debugPortAppend(const uint8_t* data, size_t size)
+void modelPortAppend(const uint8_t* data, size_t size)
 {
-    size_t startOffset = debugReceiveBuffer.size();
+    size_t startOffset = debugSendBuffer.size();
     debugSendBuffer.resize(startOffset + size);
     std::memcpy((uint8_t*)debugSendBuffer.c_str() + startOffset, data, size);
 }
 
-void debugPortSend()
+void modelPortSend()
 {
-    WASM_IMPORT(debugSend)
-    void debugSend(const uint8_t* data, int size);
-    debugSend(debugSendBuffer.c_str(), debugSendBuffer.length());
+    WASM_IMPORT(modelSend)
+    void modelSend(const uint8_t* data, int size);
+    modelSend(debugSendBuffer.c_str(), debugSendBuffer.length());
     debugSendBuffer.clear();
 }
 
-WASM_EXPORT(debugRecv)
-uint8_t* debugRecv(int size)
+uint32_t modelPortTime()
 {
-    auto oldSize = debugReceiveBuffer.size();
-    debugReceiveBuffer.resize(oldSize + size);
-    return debugReceiveBuffer.data() + oldSize;
+    WASM_IMPORT(time)
+    uint32_t wasmTime(void);
+    return wasmTime();
+}
+
+WASM_EXPORT(modelRecv)
+void modelRecv(uint8_t* data, int size)
+{
+    modelPortEvent(data, size);
+}
+
+WASM_EXPORT(malloc)
+void *wasmMalloc(size_t size) {
+    return malloc(size);
+}
+
+WASM_EXPORT(free)
+void wasmFree(void* ptr) {
+    free(ptr);
 }

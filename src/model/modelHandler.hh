@@ -8,18 +8,16 @@
 
 extern State modelState;
 
-// Called on incoming data over debug port
-void modelDataOnReceived(const uint8_t* data, size_t size);
-// Send data over debug port
-void modelDataSend(const uint8_t* data, size_t size);
+void modelEnsureStartup();
 
-// Get comm port incoming data (used by model handler to call comm_event())
-size_t modelCommReceive(const uint8_t** data);
+// Port for model handler
+int modelPortFree(); // Free space in debug FIFO
+bool modelPortIsEmpty(); // If sending buffer is empty
+void modelPortAppend(uint8_t data); // Append data to FIFO
+void modelPortAppend(const uint8_t* data, size_t size); // Append data to FIFO
+void modelPortSend(); // Send appended data
+uint32_t modelPortTime(); // Real time in milliseconds
 
-// Debugging port
-int debugPortFree(); // Free space in debug FIFO
-void debugPortAppend(uint8_t data); // Append data to FIFO
-void debugPortAppend(const uint8_t* data, size_t size); // Append data to FIFO
-void debugPortSend(); // Send appended data
+void modelPortEvent(const uint8_t* data, size_t size); // Event on data received for model handler
 
 #endif

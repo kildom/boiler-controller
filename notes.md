@@ -38,6 +38,7 @@ Hardware:
   * https://botland.com.pl/przekazniki-przekazniki-arduino/6940-modul-przekaznikow-16-kanalow-z-optoizolacja-styki-10a250vac-cewka-5v-5904422359911.html
 
 * Case
+  * https://kamami.pl/obudowy/1179821-z26-ps-obudowa-plastikowa.html
   * https://allegro.pl/oferta/obudowa-kradex-z95j-12156497710
   * https://allegro.pl/oferta/z-90j-obudowa-z-tworzywa-225-x-175-x-80-mm-jasna-11970558491
   * https://3d-innowacje.pl/sklep/zamow-druk-3d/

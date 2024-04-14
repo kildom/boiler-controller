@@ -2,7 +2,7 @@
 #include "stm32l5xx_hal.h"
 #include "stm32l5xx_ll_tim.h"
 #include "main.h"
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 
 static volatile bool timerCapturedIntr = true;
 

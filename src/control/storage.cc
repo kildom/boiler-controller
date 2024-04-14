@@ -6,7 +6,7 @@
 #include "global.hh"
 #include "log.hh"
 #include "crc.hh"
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 #include "utils.hh"
 #include "storage.hh"
 

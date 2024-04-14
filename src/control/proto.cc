@@ -1,6 +1,6 @@
 
 #include "global.hh"
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 #include "proto.hh"
 #include "crc.hh"
 

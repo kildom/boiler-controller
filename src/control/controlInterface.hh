@@ -7,7 +7,7 @@
 
 #define TIME_BITS 31
 
-#define RGB_LED_COUNT 8
+//#define RGB_LED_COUNT 8
 
 // UPPER LEVELS ==> LOW LEVEL
 

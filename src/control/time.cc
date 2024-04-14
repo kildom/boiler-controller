@@ -3,7 +3,7 @@
 #include "time.hh"
 #include "deque.hh"
 #include "storage.hh"
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 
 #define LOW_LEVEL_END ((uint32_t)(1 << TIME_BITS))
 #define LOW_LEVEL_MASK (LOW_LEVEL_END - (uint32_t)1)

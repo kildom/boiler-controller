@@ -3,7 +3,7 @@
 
 #include "model.hpp"
 
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 #include "log.hh"
 
 #define WASM_EXPORT(name) \

@@ -2,7 +2,7 @@
 #define _RELAYS_HH_
 
 #include "global.hh"
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 
 class Relay {
 public:

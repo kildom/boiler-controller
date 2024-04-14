@@ -1,6 +1,9 @@
 
 import * as fs from 'fs';
+import * as path from "path";
 import * as crypto from 'crypto';
+
+const DIR = path.dirname(process.argv[1]);
 
 const inputs = {
     time: (output: string[], struct: StructItem, indent: string) => {
@@ -190,9 +193,9 @@ function categorize() {
     }
 }
 
-for (let file of fs.readdirSync('../../firmware')) {
+for (let file of fs.readdirSync(path.resolve(DIR, '../src/control'))) {
     if (file.match(/\.(hh|cc|cpp|h|hpp)$/)) {
-        parseFile(`../../firmware/${file}`);
+        parseFile(path.resolve(DIR, `../src/control/${file}`));
     }
 }
 
@@ -210,7 +213,9 @@ let digest = hash.digest('hex').toUpperCase();
 defines['STORAGE_MAGIC1_BASE'] = [ '    0x' + digest.substring(0, 8)];
 defines['STORAGE_MAGIC2_BASE'] = [ '    0x' + digest.substring(8, 16)];
 
-fs.writeFileSync('../../firmware/autogen.inc', Object.entries(defines).map(x => `#define ${x[0]} \\\n${x[1].join('\n')}`).join('\n\n') + '\n');
+fs.mkdirSync(path.resolve(DIR, '../build/include'), {recursive: true});
+
+fs.writeFileSync(path.resolve(DIR, '../build/include/autogen.inc'), Object.entries(defines).map(x => `#define ${x[0]} \\\n${x[1].join('\n')}`).join('\n\n') + '\n');
 
 //console.log(structures);
 //console.log(defaults);

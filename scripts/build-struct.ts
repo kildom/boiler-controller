@@ -2,14 +2,13 @@ import { readFileSync, writeFileSync } from "fs";
 import * as path from "path";
 import { StateStruct } from "../scripts/common.js";
 
-
 const DIR = path.dirname(process.argv[1]);
 
 let stateStruct: StateStruct = {};
 
 async function getStateStruct() {
     let _;
-    let text = readFileSync(path.resolve(DIR, 'model.hpp'), 'utf-8');
+    let text = readFileSync(path.resolve(DIR, '../src/model/model.hh'), 'utf-8');
     [_, text] = text.split('// BEGIN STATE', 2);
     [text] = text.split('// END STATE', 1);
     let group: typeof stateStruct[''] = [];
@@ -98,7 +97,7 @@ export function buildStruct() {
     out += '    };\n';
     out += '};\n\n';
     out += `export const stateStruct: StateStruct = ${JSON.stringify(stateStruct, null, '    ')};\n\n`;
-    let fileName = path.join(DIR, '..', 'scripts', 'struct.ts');
+    let fileName = path.join(DIR, '../src/graph/struct.ts');
     let old = '';
     try {
         old = readFileSync(fileName, 'utf-8');

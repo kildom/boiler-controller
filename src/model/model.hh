@@ -1,9 +1,11 @@
+#ifndef MODEL_HPP
+#define MODEL_HPP
 
 #include <math.h>
 
-#include "ModelZaworu.hpp"
-#include "ModelKotlaElekt.hpp"
-#include "ModelZasobnika.hpp"
+#include "ModelZaworu.hh"
+#include "ModelKotlaElekt.hh"
+#include "ModelZasobnika.hh"
 
 
 struct State {
@@ -106,6 +108,8 @@ struct State {
     bool   IN1;         // in    Input 1 - podajnik pelletu
 
     // END STATE
+
+    double timeoutLeft; // Number of seconds left to the next timeout event
 
     ModelZaworu modZ0;
     ModelZaworu modZ1;
@@ -219,6 +223,9 @@ struct State {
         // Wejścia
         IN0 = 0;         // in    Input 0 - ster. pokojowy
         IN1 = 0;         // in    Input 1 - podajnik pelletu
+
+        // Inne
+        timeoutLeft = 0.0;
     }
 
     void step(double time)
@@ -279,3 +286,5 @@ struct State {
         Time += time;
     }
 };
+
+#endif

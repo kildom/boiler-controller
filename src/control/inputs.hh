@@ -2,7 +2,7 @@
 #define _INPUTS_H_
 
 #include "global.hh"
-#include "lowlevel.hh"
+#include "controlInterface.hh"
 
 class Input {
 public:

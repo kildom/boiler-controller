@@ -18,6 +18,9 @@ Hardware:
     * Header 2: Debug: GND, Rx, Tx - maybe over cable: https://www.tme.eu/pl/details/zl263-3sg/listwy-i-gniazda-kolkowe/connfly/ds1024-1-3r0/
     * Header 3: N/C - just holers
   * SD card
+  * Node.js:
+    * https://unofficial-builds.nodejs.org/download/release/v18.20.2/
+    * https://github.com/sdesalas/node-pi-zero
  
 * STM32 Nucleo
   * https://os.mbed.com/platforms/ST-Nucleo-L552ZE-Q/

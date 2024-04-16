@@ -82,6 +82,11 @@ Rapsberry PI configuration:
      * Start Controller server (from Normal OS partition)
    * no zrok tunnel
    * controller will be also connected to recovery switch and it will not reset the Recovery OS
+ * Cross zrok for ARMv6:
+   * Install gcc: `sudo apt-get install gcc-arm-linux-gnueabi` (but make sure libc <= GLIBC_2.31)
+   * Install go: `sudo snap install go --classic`, `sudo snap install goreleaser --classic`
+   * Build UI from `BUILD.md`
+   * build bin: `goreleaser release --clean --skip-publish --skip-validate --config .goreleaser-linux-armv6.yml`
 
 Old ideas for GUI:
 * https://botland.com.pl/moduly-nanopi/14635-nanopi-neo-v14-allwinner-h3-quad-core-12ghz-512mb-ram-bez-zlaczy-5904422377656.html

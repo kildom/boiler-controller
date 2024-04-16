@@ -47,7 +47,42 @@ Hardware:
   * https://3d-innowacje.pl/sklep/zamow-druk-3d/
 * Current
   * https://www.tme.eu/pl/details/ax-0500/przekladniki-pradowe/talema/
- 
+
+Rapsberry PI configuration:
+ * Serial port `/dev/serial0` - only data (not console). Probably must be set by `sudo raspi-config` (interface options)
+ * BT not needed: `dtoverlay=disable-bt` in `boot/config.txt`
+ * Controller should be able to reset Rapsberry PI if no communication for some time.
+   * It will first set GPIO and some service will reboot the system `sudo reboot`.
+   * If still no response, use hard reset.
+ * Partitions:
+   * boot
+   * Normal OS
+   * Recovery OS 
+ * Two OSes - Selection using switch
+   * GPIO detection at early OS startup stage
+   * `/boot/cmdline.txt` can select partition
+   * RegEx replace: `(root=PARTUUID=[0-9a-fA-F]{8}-[0-9]*)[0-9]` => `$1N`
+     * where `N` is partition number starting from 1
+     * Numbers can be listed by: `sudo fdisk -x /dev/mmcblk0`
+   * if `/boot/cmdline.txt` was changed `sudo reboot` should be executed.
+ * Normal OS
+   * Controller server + zrok tunnel
+   * Mantainace options in controller server:
+     * Reboot
+     * Change WiFi SSID and passwort and reboot
+   * SSH + ttyd over HTTP
+ * Recovery OS
+   * Creates an access point with constant IP address
+   * Enables SSH + ttyd over HTTP
+   * Simple password for WiFi and SSH
+   * Simple HTTP interface (maybe Python) with:
+     * OS selection + reboot
+     * WiFi SSID and password (for Normal OS) + reboot
+     * Normal OS partition image upload ??? maybe
+     * Start Controller server (from Normal OS partition)
+   * no zrok tunnel
+   * controller will be also connected to recovery switch and it will not reset the Recovery OS
+
 Old ideas for GUI:
 * https://botland.com.pl/moduly-nanopi/14635-nanopi-neo-v14-allwinner-h3-quad-core-12ghz-512mb-ram-bez-zlaczy-5904422377656.html
 * https://allegro.pl/oferta/mikrokomputer-orange-pi-zero-512mb-13680197462

@@ -47,6 +47,8 @@ Hardware:
   * https://3d-innowacje.pl/sklep/zamow-druk-3d/
 * Current
   * https://www.tme.eu/pl/details/ax-0500/przekladniki-pradowe/talema/
+* 230V Inputs (low power):
+  * https://www.falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3BWcA2aAOMB2ALGXyEw1sESRkIkFIQEBTAWjDACgA3EbbNEAJgWSduIAMyRsUcLRpiacqNAQsA5iEzFRG9ROwjekyCwDG5XhP6DS5gZLCMeYAJzpscZI7SRMIsJGQ9DEzQ9UXEQYP0RDTlYeEhHBMSk5McFdwRHZExINF4REmwCESgWACdaLlEEfWQcqv0aXngWAAcQR0qxCQ6JKN6DFgB3cJC+9s7oofHesIjQiUNy3xsu8DAm+clXQ2HfOtXlwVWdtY2D9ZkRQRPmM409njHDDi4eJp5XvhsaCH8IXwMCiUABNyJhItU1GcwvpgXQAGYAQwArgAbAAuUyyEJq+0hJ3BMjC2k2J2QZi+gmxlJKw3JvS0GieLAAzkJHpCrPVAUjUSy6FMSWM5szhkLZqMwoY2npGvszpDinIprK+HVPu9aaIFfpPiJ8SxQdSLFCieYQHCkWjMUaKatqfr9LCESiMYbTDMJMabM6rW66XaNPTSex2Zs9fi+BVKICYEp8iAAF50AB2dFKxX+0EweEdGEcvAw8F4jEwkl4sTiVfgTPALET4Dgj3uTc2+mTaYzUx6mweId2rbGPeZrjLt0ugnWwhEVzrqnWYCO-nAvEXnBCyqWq6Os4XghNNGocBYACUV2uTXu+BT5K5RNAlQZFFMrzPJ2ZHrPDABZcB6T+TiImA7vu4DZiwACSK7Tru-6iF+QK0C+FyiMu46aAsUwanUXKaicuE4ZUB4sAA9rQKC2IWkDFD4IjQI4wH6ouq6FLwqQwPAECNHwXGkaIFE-FRSrZgIng5mx-AkBQ1yxNQ1QIPJHTeNgjhrhAkSiHxDjXCunhcZW+nwJgCSEF4yBASIjjUMgoH6I8LBAA
 
 Rapsberry PI configuration:
  * Serial port `/dev/serial0` - only data (not console). Probably must be set by `sudo raspi-config` (interface options)

@@ -6,8 +6,6 @@
 
 #include "model.hh"
 
-extern State modelState;
-
 void modelEnsureStartup();
 
 // Port for model handler
@@ -17,6 +15,7 @@ void modelPortAppend(uint8_t data); // Append data to FIFO
 void modelPortAppend(const uint8_t* data, size_t size); // Append data to FIFO
 void modelPortSend(); // Send appended data
 uint32_t modelPortTime(); // Real time in milliseconds
+void modelPortReset(); // Reset entire system
 
 void modelPortEvent(const uint8_t* data, size_t size); // Event on data received for model handler
 

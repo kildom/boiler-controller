@@ -101,7 +101,7 @@ function updateState() {
     for (let [groupName, group] of Object.entries(stateStruct)) {
         for (let field of group) {
             let element = document.querySelector('#state-' + field.name) as HTMLInputElement;
-            if (field.type == 'double') {
+            if (field.type == 'fptype') {
                 let oldVal = element.getAttribute('data-original-value') || element.value;
                 let newVal = (state[field.name] as number).toString();
                 if (oldVal != newVal) {
@@ -174,7 +174,7 @@ function createStateTable() {
         out += `<tr><td colspan="3">${escapeHtml(groupName)}</td></tr>`;
         for (let field of group) {
             let readonly = field.method != 'param' && field.method != 'in' && field.method != 'out'; // TODO: delete OUT
-            if (field.type == 'double') {
+            if (field.type == 'fptype') {
                 out += `<tr><td><input type="text" value="" id="state-${field.name}" ${readonly ? 'readonly' : ''}></td>`;
             } else {
                 out += `<tr><td><input type="checkbox" id="state-${field.name}" ${readonly ? 'onclick="return false;"' : ''}></td>`;
@@ -187,7 +187,7 @@ function createStateTable() {
 
     for (let [groupName, group] of Object.entries(stateStruct)) {
         for (let field of group) {
-            if (field.type == 'double') {
+            if (field.type == 'fptype') {
                 textControl('#state-' + field.name, (v: string) => {
                     msg({ type: 'set-state', name: field.name, value: parseFloat(v) });
                 }, (v: string) => numberInRange(v, -Infinity, Infinity));

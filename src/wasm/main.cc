@@ -100,6 +100,13 @@ uint32_t modelPortTime()
     return wasmTime();
 }
 
+void modelPortReset()
+{
+    WASM_IMPORT(reset)
+    void wasmReset(void);
+    wasmReset();
+}
+
 WASM_EXPORT(modelRecv)
 void modelRecv(uint8_t* data, int size)
 {

@@ -2,17 +2,19 @@
 #define __ModelKotlaElekt_HPP
 
 
+#include "modelCommon.hh"
+
 struct ModelKotlaElekt {
 
-    double& T;         // out   Temperatura wyjściowa
-    double& Tset;      // param Temperatura zadana
-    double& P;         // in    Przepływ przez kocioł
-    double& Tin;       // in    Temperatura wejściowa
+    fptype& T;         // out   Temperatura wyjściowa
+    fptype& Tset;      // param Temperatura zadana
+    fptype& P;         // in    Przepływ przez kocioł
+    fptype& Tin;       // in    Temperatura wejściowa
     bool&   Ron;       // in    Wejście przekaźnika załączającego 0, 1
     bool&   Rpom;      // out   Wyjście przekaźnika pompy 0, 1
-    double& CzasStart; // param Czas startu
-    double& CzasStop;  // param Czas stopu
-    double& Moc;       // param Max. różnica temperatury przy przepływie "1"
+    fptype& CzasStart; // param Czas startu
+    fptype& CzasStop;  // param Czas stopu
+    fptype& Moc;       // param Max. różnica temperatury przy przepływie "1"
 
     enum {
         OFF,
@@ -20,19 +22,19 @@ struct ModelKotlaElekt {
         ON,
         STOPPING,
     } state;
-    double stateTime;
+    fptype stateTime;
 
-    ModelKotlaElekt(double& T, double& Tset, double& P, double& Tin, bool& Ron, bool& Rpom, double& CzasStart, double& CzasStop, double& Moc):
+    ModelKotlaElekt(fptype& T, fptype& Tset, fptype& P, fptype& Tin, bool& Ron, bool& Rpom, fptype& CzasStart, fptype& CzasStop, fptype& Moc):
         T(T), Tset(Tset), P(P), Tin(Tin), Ron(Ron), Rpom(Rpom), CzasStart(CzasStart), CzasStop(CzasStop), Moc(Moc),
         state(OFF), stateTime(0.0) { }
 
     template<typename T>
     void setState(T s) {
-        stateTime = 0.0;
+        stateTime = 0.0_f;
         state = s;
     }
 
-    void step(double time) {
+    void step(fptype time) {
         stateTime += time;
         T = Tin;
         switch (state)

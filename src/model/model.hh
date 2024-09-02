@@ -3,6 +3,7 @@
 
 #include <math.h>
 
+#include "modelCommon.hh"
 #include "ModelZaworu.hh"
 #include "ModelKotlaElekt.hh"
 #include "ModelZasobnika.hh"
@@ -11,81 +12,54 @@
 struct State {
     // BEGIN STATE
 
-    // Parametry symulacji
-    double speed;       // param Prędkość symulacji
-    double maxStepSize; // param Maksymalny krok symulacji
-    double period;      // param Okres jednego odświerzenia wizualizacji
-    bool running;       // calc  Simulation is running
+#define _MODEL_BEGIN_STATE_FIELD Time
 
     // Ogólne
-    double Time;        // calc  Czas od początku symulacji
-    double OpenTime;    // param Czas otwarcia zaworu
+    fptype Time;        // calc  Czas od początku symulacji
 
     // Kocioł na pellet
-    double Tpowr;       // calc  Temperatura powrotu
-    double Tpiec;       // mod   Temperatura wyjściowa pieca
-    double P0;          // calc  Aktualny przepływ pompki pieca
-    double P0v;         // param Przepływ pompki pieca, gdy pracuje
-    double Z0;          // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
-    double Z0dir;       // mod   Aktualny kierunek zaworu powrotu pieca
+    fptype Tpowr;       // calc  Temperatura powrotu
+    fptype Tpiec;       // mod   Temperatura wyjściowa pieca
+    fptype P0;          // calc  Aktualny przepływ pompki pieca
+    fptype Z0;          // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
+    fptype Z0dir;       // mod   Aktualny kierunek zaworu powrotu pieca
 
     // Kocioł elektryczny
-    double Tele;         // mod   Temperatura wyjścia kotła elektrycznego
-    double Tzadele;      // param Temperatura zadana kotła elektrycznego
-    double P4;           // calc  Przepływ pompy kotła elektrycznego
-    double P4v;          // param Przepływ pompy kotła elektrycznego, gdy pracuje
+    fptype Tele;         // mod   Temperatura wyjścia kotła elektrycznego
+    fptype P4;           // calc  Przepływ pompy kotła elektrycznego
     bool   Rele;         // mod   Załączenie pompy przez kocioł elekt.
-    double EleCzasStart; // param Czas startu kotła elektrycznego
-    double EleCzasStop;  // param Czas zatrzymania kotła elektrycznego
-    double EleMoc;       // param Max. różnica temperatury przy przepływie "1"
 
     // Sprzęgło hydrauliczne
-    double Tspz;        // calc  Temeratura zimnego wyjścia ze sprzęgła
-    double Tspc;        // calc  Temeratura ciepłego wyjścia ze sprzęgła
-    double Twejspz;     // calc  Temeratura zimnego wejścia do sprzęgła
-    double Twejspc;     // calc  Temeratura ciepłego wejścia do sprzęgła
+    fptype Tspz;        // calc  Temeratura zimnego wyjścia ze sprzęgła
+    fptype Tspc;        // calc  Temeratura ciepłego wyjścia ze sprzęgła
+    fptype Twejspz;     // calc  Temeratura zimnego wejścia do sprzęgła
+    fptype Twejspc;     // calc  Temeratura ciepłego wejścia do sprzęgła
 
     // Podłogówka 1
-    double Tpodl1;      // calc  Temperatura podłogówki 1
-    double Twyj1;       // mod   Temperatura wyjściowa podłogówki 1
-    double P1;          // calc  Przepływ pompy podłogówki 1
-    double P1v;         // param Przepływ pompy podłogówki 1, gdy pracuje
-    double Z1;          // mod   Zawór podłogówki 1 (0 - niska. temp. podł, 1 - wysoka temp. podł)
-    double Z1dir;       // mod   Aktualny kierunek zaworu podłogówki 1
-    double Twyl1;       // mod   Temperatura wylewki 1
-    double Tdelta1;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
+    fptype Tpodl1;      // calc  Temperatura podłogówki 1
+    fptype Twyj1;       // mod   Temperatura wyjściowa podłogówki 1
+    fptype P1;          // calc  Przepływ pompy podłogówki 1
+    fptype Z1;          // mod   Zawór podłogówki 1 (0 - niska. temp. podł, 1 - wysoka temp. podł)
+    fptype Z1dir;       // mod   Aktualny kierunek zaworu podłogówki 1
+    fptype Twyl1;       // mod   Temperatura wylewki 1
+    fptype Tdelta1;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
 
     // Podłogówka 2
-    double Tpodl2;      // calc  Temperatura podłogówki 2
-    double Twyj2;       // mod   Temperatura wyjściowa podłogówki 2
-    double P2;          // calc  Przepływ pompy podłogówki 1
-    double P2v;         // param Przepływ pompy podłogówki 2, gdy pracuje
-    double Z2;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
-    double Z2dir;       // mod   Aktualny kierunek zaworu podłogówki 2
-    double Twyl2;       // mod   Temperatura wylewki 2
-    double Tdelta2;     // calc  Jak szybko upływa temperatura z wylewki 2 [°C/s]
-
-    // Podłogówka - wspólne
-    double PodlA;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-    double PodlK;        // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
-    double Tpoddelta;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
+    fptype Tpodl2;      // calc  Temperatura podłogówki 2
+    fptype Twyj2;       // mod   Temperatura wyjściowa podłogówki 2
+    fptype P2;          // calc  Przepływ pompy podłogówki 1
+    fptype Z2;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
+    fptype Z2dir;       // mod   Aktualny kierunek zaworu podłogówki 2
+    fptype Twyl2;       // mod   Temperatura wylewki 2
+    fptype Tdelta2;     // calc  Jak szybko upływa temperatura z wylewki 2 [°C/s]
 
     // Dom
-    double Tdom;         // calc  Temperatura domu
-    double Tzaddom;      // param Temperatura zadana domu
-    double Tzewn;        // param Temperatura na zwenątrz
-    double Tdomdelta;    // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z wylewką [°C/s / °C]
-    double Tzewndelta;   // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z zewnętrzem [°C/s / °C]
+    fptype Tdom;         // calc  Temperatura domu
 
     // CWU
-    double Twyj3;       // mod   Wyjście zasobnika CWU
-    double Tzas;        // mod   Temperatura wody CWU
-    double P3;          // calc  Przepływ pompy CWU
-    double P3v;         // param Przepływ pompy CWU, gdy pracuje
-    double ZasA;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-    double ZasK;        // param Jak szybko wężownica przekazuje energię do zasobnika (jednostki nieznane)
-    double ZasTwdelta;  // param Jak szybko upływa temperatura ze zbiornika [°C/s].
-    double ZasTwmin;    // param Minimalna temeratura zasobnika
+    fptype Twyj3;       // mod   Wyjście zasobnika CWU
+    fptype Tzas;        // mod   Temperatura wody CWU
+    fptype P3;          // calc  Przepływ pompy CWU
 
     // Przekaźniki
     bool   R0;          // out   Relay 0 - odcięcie paliwa
@@ -107,7 +81,56 @@ struct State {
     bool   IN0;         // in    Input 0 - ster. pokojowy
     bool   IN1;         // in    Input 1 - podajnik pelletu
 
-    // END STATE
+    // BEGIN PARAMS
+
+#define _MODEL_BEGIN_PARAMS_FIELD speed
+
+    // Parametry symulacji
+    fptype speed;         // param Prędkość symulacji
+    fptype maxStepTime;   // param Maksymalny czas kroku symulacji
+    fptype maxSimuTime;   // param Maksymalny czas ciągłej pracy symulacji
+    bool   running;       // param Praca symulacji
+
+    // Ogólne
+    fptype OpenTime;    // param Czas otwarcia zaworu
+
+    // Kocioł na pellet
+    fptype P0v;         // param Przepływ pompki pieca, gdy pracuje
+
+    // Kocioł elektryczny
+    fptype Tzadele;      // param Temperatura zadana kotła elektrycznego
+    fptype P4v;          // param Przepływ pompy kotła elektrycznego, gdy pracuje
+    fptype EleCzasStart; // param Czas startu kotła elektrycznego
+    fptype EleCzasStop;  // param Czas zatrzymania kotła elektrycznego
+    fptype EleMoc;       // param Max. różnica temperatury przy przepływie "1"
+
+    // Podłogówka 1
+    fptype P1v;         // param Przepływ pompy podłogówki 1, gdy pracuje
+
+    // Podłogówka 2
+    fptype P2v;         // param Przepływ pompy podłogówki 2, gdy pracuje
+
+    // Podłogówka - wspólne
+    fptype PodlA;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
+    fptype PodlK;        // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
+    fptype Tpoddelta;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
+
+    // Dom
+    fptype Tzaddom;      // param Temperatura zadana domu
+    fptype Tzewn;        // param Temperatura na zwenątrz
+    fptype Tdomdelta;    // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z wylewką [°C/s / °C]
+    fptype Tzewndelta;   // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z zewnętrzem [°C/s / °C]
+
+    // CWU
+    fptype P3v;         // param Przepływ pompy CWU, gdy pracuje
+    fptype ZasA;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
+    fptype ZasK;        // param Jak szybko wężownica przekazuje energię do zasobnika (jednostki nieznane)
+    fptype ZasTwdelta;  // param Jak szybko upływa temperatura ze zbiornika [°C/s].
+    fptype ZasTwmin;    // param Minimalna temeratura zasobnika
+
+#define _MODEL_END_PARAMS_FIELD ZasTwmin
+
+    // END PARAMS
 
     ModelZaworu modZ0;
     ModelZaworu modZ1;
@@ -129,8 +152,6 @@ struct State {
 
         // Parametry symulacji
         speed = 1;       // param Prędkość symulacji
-        maxStepSize = 0.05; // param Maksymalny krok symulacji
-        period = 0.05;      // param Okres jednego odświerzenia wizualizacji
 
         // Ogólne
         Time = 0;        // calc  Czas od początku symulacji
@@ -141,7 +162,7 @@ struct State {
         Tpiec = 70;       // mod   Temperatura wyjściowa pieca
         P0 = 0;          // calc  Aktualny przepływ pompki pieca
         P0v = 1;         // param Przepływ pompki pieca, gdy pracuje
-        Z0 = 0.4;        // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
+        Z0 = 0.4_f;        // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
         Z0dir = 0;       // mod   Aktualny kierunek zaworu powrotu pieca
 
         // Kocioł elektryczny
@@ -165,7 +186,7 @@ struct State {
         Twyj1 = 26;       // mod   Temperatura wyjściowa podłogówki 1
         P1 = 0;          // calc  Przepływ pompy podłogówki 1
         P1v = 1;         // param Przepływ pompy podłogówki 1, gdy pracuje
-        Z1 = 0.31;          // mod   Zawór podłogówki 1 (0 - niska. temp. podł, 1 - wysoka temp. podł)
+        Z1 = 0.31_f;          // mod   Zawór podłogówki 1 (0 - niska. temp. podł, 1 - wysoka temp. podł)
         Z1dir = 0;       // mod   Aktualny kierunek zaworu podłogówki 1
         Twyl1 = 20;       // mod   Temperatura wylewki 1
         Tdelta1 = 0;     // calc   Jak szybko upływa temperatura z wylewki 1 [°C/s].
@@ -175,31 +196,31 @@ struct State {
         Twyj2 = 26;       // mod   Temperatura wyjściowa podłogówki 2
         P2 = 0;          // calc  Przepływ pompy podłogówki 1
         P2v = 1;         // param Przepływ pompy podłogówki 2, gdy pracuje
-        Z2 = 0.98;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
+        Z2 = 0.98_f;          // mod   Zawór podłogówki 2 (0 - niska. temp. podł, 1 - wysoka temp. podł)
         Z2dir = 0;       // mod   Aktualny kierunek zaworu podłogówki 2
         Twyl2 = 20;       // mod   Temperatura wylewki 1
         Tdelta2 = 0;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
 
         // Podłogówka - wspólne
         PodlA = 1;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-        PodlK = 0.0004;   // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
-        Tpoddelta = 0.00007;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
+        PodlK = 0.0004_f;   // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
+        Tpoddelta = 0.00007_f;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
 
         // Dom
         Tdom = 23;         // calc  Temperatura domu
         Tzaddom = 23;      // param Temperatura zadana domu
         Tzewn = -5;        // param Temperatura na zwenątrz
-        Tdomdelta = 0.0001;    // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z wylewką [°C/s / °C]
-        Tzewndelta = 0.000023;   // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z zewnętrzem [°C/s / °C]
+        Tdomdelta = 0.0001_f;    // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z wylewką [°C/s / °C]
+        Tzewndelta = 0.000023_f;   // param Jak szybko zmienia się temperatura domu na 1 °C różnicy z zewnętrzem [°C/s / °C]
 
         // CWU
         Twyj3 = 18;       // mod   Wyjście zasobnika CWU
         Tzas = 10;        // mod   Temperatura wody CWU
         P3 = 0;          // calc  Przepływ pompy CWU
         P3v = 1;         // param Przepływ pompy CWU, gdy pracuje
-        ZasA = 0.5;      // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-        ZasK = 0.001;    // param Jak szybko wężownica przekazuje energię do zasobnika (jednostki nieznane)
-        ZasTwdelta = 5.0 / 60.0 / 60.0;  // param Jak szybko upływa temperatura ze zbiornika [°C/s].
+        ZasA = 0.5_f;      // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
+        ZasK = 0.001_f;    // param Jak szybko wężownica przekazuje energię do zasobnika (jednostki nieznane)
+        ZasTwdelta = 5.0_f / 60.0_f / 60.0_f;  // param Jak szybko upływa temperatura ze zbiornika [°C/s].
         ZasTwmin = 8;    // param Minimalna temeratura zasobnika
 
         // Przekaźniki
@@ -223,7 +244,7 @@ struct State {
         IN1 = 0;         // in    Input 1 - podajnik pelletu
     }
 
-    void step(double time)
+    void step(fptype time)
     {
         P0 = P0v * R3;
         P1 = P1v * R8;
@@ -239,31 +260,31 @@ struct State {
         podl1Zas.step(time);
         podl2Zas.step(time);
 
-        Tpowr = (1.0 - Z0) * Tspz + Z0 * Tpiec;
-        if (P0 * (1.0 - Z0) + P4 > 0.0) {
-            Twejspc = (P0 * (1.0 - Z0) * Tpiec + P4 * Tele) / (P0 * (1.0 - Z0) + P4);
+        Tpowr = (1.0_f - Z0) * Tspz + Z0 * Tpiec;
+        if (P0 * (1.0_f - Z0) + P4 > 0.0_f) {
+            Twejspc = (P0 * (1.0_f - Z0) * Tpiec + P4 * Tele) / (P0 * (1.0_f - Z0) + P4);
         } else {
             Twejspc = Tspz;
         }
 
-        Tpodl1 = Z1 * Tspc + (1.0 - Z1) * Twyj1;
+        Tpodl1 = Z1 * Tspc + (1.0_f - Z1) * Twyj1;
 
-        Tpodl2 = Z2 * Tspc + (1.0 - Z2) * Twyj2;
+        Tpodl2 = Z2 * Tspc + (1.0_f - Z2) * Twyj2;
 
-        if (P1 * Z1 + P2 * Z2 + P3 > 0.0) {
+        if (P1 * Z1 + P2 * Z2 + P3 > 0.0_f) {
             Twejspz = (P1 * Z1 * Twyj1 + P2 * Z2 * Twyj2 + P3 * Twyj3) / (P1 * Z1 + P2 * Z2 + P3);
         } else {
-            Twejspz = (Twyj1 + Twyj2 + Twyj3) / 3.0;
+            Twejspz = (Twyj1 + Twyj2 + Twyj3) / 3.0_f;
         }
 
-        double Pp = (1 - Z0) * P0 + P4;
-        double Ps = Z1 * P1 + Z2 * P2 + P3;
+        fptype Pp = (1 - Z0) * P0 + P4;
+        fptype Ps = Z1 * P1 + Z2 * P2 + P3;
         if (Pp > Ps) {
-            double Pd = Pp - Ps;
+            fptype Pd = Pp - Ps;
             Tspc = Twejspc;
             Tspz = (Pd * Twejspc + Ps * Twejspz) / (Pd + Ps);
         } else if (Pp < Ps) {
-            double Pd = Ps - Pp;
+            fptype Pd = Ps - Pp;
             Tspz = Twejspz;
             Tspc = (Pd * Twejspz + Pp * Twejspc) / (Pd + Pp);
         } else {
@@ -273,7 +294,7 @@ struct State {
 
         Tdelta1 = (Twyl1 - Tdom) * Tpoddelta;
         Tdelta2 = (Twyl2 - Tdom) * Tpoddelta;
-        double Tdompodl = (Twyl1 + Twyl2) * 0.5;
+        fptype Tdompodl = (Twyl1 + Twyl2) * 0.5_f;
         Tdom += (Tdompodl - Tdom) * Tdomdelta * time;
         Tdom -= (Tdom - Tzewn) * Tzewndelta * time;
         IN0 = Tdom < Tzaddom;

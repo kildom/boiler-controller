@@ -1,7 +1,7 @@
 /node_modules/
 /src/hw/Debug/
 /src/hw/Release/
-/src/graph/struct.ts
+/src/simu/model-struct-generated.ts
 /ext/
 /dist/
 /build/

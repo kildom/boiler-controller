@@ -3,30 +3,31 @@
 
 #include <math.h>
 
+#include "modelCommon.hh"
 
 struct ModelZasobnika {
 
-    double& T;       // out   Temperatura wody w zasobniku
-    double& Tin;     // in    Temperatura wejściowa
-    double& P;       // in    Przepływ wody w wężownicy
-    double& Tout;    // out   Temperatura wyjściowa
-    double& A;       // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-    double& K;       // param Jak szybko wężownica przekazuje energię do zasobnika (jednostki nieznane)
-    double& Twdelta; // param Jak szybko upływa temperatura ze zbiornika [°C/s].
-    double& Twmin;   // param Minimalna temeratura zasobnika
+    fptype& T;       // out   Temperatura wody w zasobniku
+    fptype& Tin;     // in    Temperatura wejściowa
+    fptype& P;       // in    Przepływ wody w wężownicy
+    fptype& Tout;    // out   Temperatura wyjściowa
+    fptype& A;       // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
+    fptype& K;       // param Jak szybko wężownica przekazuje energię do zasobnika (jednostki nieznane)
+    fptype& Twdelta; // param Jak szybko upływa temperatura ze zbiornika [°C/s].
+    fptype& Twmin;   // param Minimalna temeratura zasobnika
 
-    ModelZasobnika(double& T, double& Tin, double& P, double& Tout, double& A, double& K, double& Twdelta, double& Twmin):
+    ModelZasobnika(fptype& T, fptype& Tin, fptype& P, fptype& Tout, fptype& A, fptype& K, fptype& Twdelta, fptype& Twmin):
         T(T), Tin(Tin), P(P), Tout(Tout), A(A), K(K), Twdelta(Twdelta), Twmin(Twmin) { }
 
-    void step(double time)
+    void step(fptype time)
     {
-        if (P > 0.0) {
-            double Ap = A / P;
+        if (P > 0.0_f) {
+            fptype Ap = A / P;
             // założenie: rozkład temp. na wężownicy opisuje równanie y'(x) = (T-y) * Ap, y(0) = Tin,
             //            rozwiązanie y(x) = e^(-Ap*x)*(T*(e^(Ap*x)-1)+Tin),
             //            wężownica ma długość 1, temp. zbiornika na całej długośći jest taka sama,
             //            ilość energi przekazanej jest proporcjonalne do całki z y(x) od 0 do 1.
-            double expMAp = exp(-Ap);
+            fptype expMAp = exp(-Ap);
             Tout = T - expMAp * (T - Tin);
             T += time * K * (Tin - Tout) / Ap;
         } else {

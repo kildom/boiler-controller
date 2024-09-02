@@ -36,11 +36,12 @@ export type Message = ReadyMsg | EmptyMsg  | StateMsg | SetStateMsg | ButtonMsg 
 
 export type StateStruct = {
     [group: string]: {
-        type: 'double' | 'bool',
+        type: 'fptype' | 'bool' | 'uint8_t',
         name: string,
         method: 'calc' | 'mod' | 'param' | 'out' | 'in',
         comment: string,
-        offset: number
+        offset32: number,
+        offset64: number,
     }[]
 };
 

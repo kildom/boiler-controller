@@ -56,7 +56,7 @@ $(OBJ_DIR)/%.c.o: ../../%.c ../../build/include/autogen.inc Makefile
 	mkdir -p $(dir $@)
 	$(CC) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 
-../../build/include/autogen.inc: $(wildcard ../control/*.hh) ../../scripts/autogen.ts Makefile
-	npx tsx ../../scripts/autogen.ts
+# ../../build/include/autogen.inc: $(wildcard ../control/*.hh) ../../scripts/autogen.ts Makefile
+# 	npx tsx ../../scripts/autogen.ts
 
 -include $(patsubst %.o,%.d,$(OBJ))

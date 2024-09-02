@@ -5,18 +5,22 @@
 
 #include <algorithm>
 #include <string>
+#include <cstring>
 
 #include "../control/controlInterface.hh"
 
+#include "modelCommon.hh"
 #include "model.hh"
 #include "modelHandler.hh"
 
 enum CmdType {
-    TYPE_DIAG = 0x00,
-    TYPE_READ = 0x20,
-    TYPE_WRITE = 0x40,
-    TYPE_RUN = 0x60,
-    TYPE_MASK = 0xE0,
+    TYPE_DIAG = 1 << 5,
+    TYPE_READ = 2 << 5,
+    TYPE_WRITE = 3 << 5,
+    TYPE_RUN = 4 << 5,
+    TYPE_INIT = 5 << 5,
+    TYPE_RESET = 6 << 5,
+    TYPE_MASK = 7 << 5,
 };
 
 struct Packet
@@ -28,7 +32,7 @@ struct Packet
         struct
         {
             uint16_t offset;
-            uint8_t data[253];
+            uint8_t data[255 - 2];
         } write;
         struct
         {
@@ -36,8 +40,17 @@ struct Packet
         } diag;
         struct
         {
+            uint16_t offset;
+            uint16_t size;
+        } readRequest;
+        struct
+        {
             uint8_t data[255];
-        } read;
+        } readResponse;
+        struct
+        {
+            uint8_t data[255];
+        } init;
         struct
         {
             uint16_t maxStepTimeMs;
@@ -55,11 +68,13 @@ State modelState;
 
 static uint8_t diagBuffer[2048 + 2];
 static size_t diagBufferLength = 2;
-static uint8_t* const stateBuffer = (uint8_t*)&modelState;
+static uint8_t* const stateBufferBegin = (uint8_t*)&modelState._MODEL_BEGIN_STATE_FIELD;
+static uint8_t* const paramsBufferBegin = (uint8_t*)&modelState._MODEL_BEGIN_PARAMS_FIELD;
+static uint8_t* const paramsBufferEnd = (uint8_t*)&modelState._MODEL_END_PARAMS_FIELD + sizeof(modelState._MODEL_END_PARAMS_FIELD);
 static Packet packet;
 static uint8_t* const packetBuffer = (uint8_t*)&packet;
 static size_t packetSize = 0;
-static double timeoutLeft;
+static fptype timeoutLeft;
 
 void modelEnsureStartup() {
     static bool startupDone = false;
@@ -72,8 +87,8 @@ void modelEnsureStartup() {
 void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeState)
 {
     static uint32_t lastRealTimeValue;
-    static double simulationRunTime = 0.0;
-    static double expectedSimulationRunTime = 0.0;
+    static fptype simulationRunTime = 0.0_f;
+    static fptype expectedSimulationRunTime = 0.0_f;
 
     uint32_t realTimeValue = modelPortTime();
 
@@ -85,27 +100,27 @@ void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeStat
     uint32_t realTimeDelta = (realTimeValue - lastRealTimeValue) & ((((1 << (TIME_BITS - 1)) - 1) << 1) + 1);
     lastRealTimeValue = realTimeValue;
 
-    expectedSimulationRunTime += (double)realTimeDelta * 0.001;
+    expectedSimulationRunTime += (fptype)realTimeDelta * 0.001_f;
 
-    double runTimeToDo = std::min((double)maxSimuTimeMs * 0.001, expectedSimulationRunTime - simulationRunTime);
+    fptype runTimeToDo = std::min((fptype)maxSimuTimeMs * 0.001_f, expectedSimulationRunTime - simulationRunTime);
 
-    if (runTimeToDo < 0.001) {
+    if (runTimeToDo < 0.001_f) {
         return;
     }
 
-    double simulationTimeStart = modelState.Time;
-    double simulationTimeEnd = modelState.Time + runTimeToDo * modelState.speed;
-    double maxStepTime = (double)maxStepTimeMs * 0.001;
+    fptype simulationTimeStart = modelState.Time;
+    fptype simulationTimeEnd = modelState.Time + runTimeToDo * modelState.speed;
+    fptype maxStepTime = (fptype)maxStepTimeMs * 0.001_f;
 
     modelEnsureStartup();
     int realTimeQueryCounter = 0;
 
     while (modelState.Time < simulationTimeEnd && modelPortIsEmpty()) {
         if (timeoutLeft <= maxStepTime) {
-            if (timeoutLeft > 0.00000001) {
+            if (timeoutLeft > 0.00000001_f) {
                 modelState.step(timeoutLeft);
             }
-            timeoutLeft = (double)PERIODIC_TIMEOUT / 1000.0;
+            timeoutLeft = (fptype)PERIODIC_TIMEOUT / 1000.0_f;
             timeout_event();
         } else {
             timeoutLeft -= maxStepTime;
@@ -126,8 +141,21 @@ void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeStat
 
 void modelPacketReceived()
 {
+    uint8_t* ptr = nullptr;
+    size_t size = 0;
+    uint16_t maxStepTimeMs;
+    uint16_t maxSimuTimeMs = 0;
+    bool resetTimeState;
+
     switch (packet.type & TYPE_MASK)
     {
+    case TYPE_INIT:
+        modelEnsureStartup();
+        packet.init.data[packet.dataSize - 1] = sizeof(fptype);
+        modelPortAppend(packetBuffer, (size_t)packet.dataSize + 2);
+        modelPortSend();
+        break;
+
     case TYPE_DIAG:
         modelEnsureStartup();
         diag_event(packet.diag.data, packet.dataSize);
@@ -136,27 +164,35 @@ void modelPacketReceived()
         modelPortSend();
         break;
 
+    case TYPE_RUN:
+        modelEnsureStartup();
+        maxStepTimeMs = packet.run.maxStepTimeMs;
+        maxSimuTimeMs = packet.run.maxSimuTimeMs;
+        resetTimeState = !!packet.run.resetTimeState;
+        ptr = stateBufferBegin;
+        size = paramsBufferBegin - stateBufferBegin;
+        __attribute__((fallthrough)); // no break here
+
     case TYPE_READ:
-        for (size_t offset = 0; offset <= sizeof(State); offset += 255) {
+        if (ptr == nullptr) {
+            ptr = paramsBufferBegin + (size_t)packet.readRequest.offset;
+            size = packet.readRequest.size;
+        }
+        for (size_t offset = 0; offset <= size; offset += 255) {
             packet.dataSize = std::min((size_t)255, sizeof(State) - offset);
-            std::memcpy(packet.read.data, &stateBuffer[offset], packet.dataSize);
+            std::memcpy(packet.readResponse.data, &ptr[offset], packet.dataSize);
             modelPortAppend(packetBuffer, (size_t)packet.dataSize + 2);
         }
         modelPortSend();
+        if (maxSimuTimeMs > 0) {
+            simulate(maxStepTimeMs, maxSimuTimeMs, resetTimeState);
+        }
         break;
   
     case TYPE_WRITE:
-        std::memcpy(&stateBuffer[packet.write.offset], packet.write.data, packet.dataSize - 2);
+        std::memcpy(&stateBufferBegin[packet.write.offset], packet.write.data, packet.dataSize - 2);
         packet.dataSize = 0;
         modelPortAppend(packetBuffer, 2);
-        modelPortSend();
-        break;
-
-    case TYPE_RUN:
-        simulate(packet.run.maxStepTimeMs, packet.run.maxSimuTimeMs, !!packet.run.resetTimeState);
-        packet.dataSize = sizeof(double);
-        std::memcpy(&packet.runResponse.data, &modelState.Time, sizeof(double));
-        modelPortAppend(packetBuffer, 2 + sizeof(double));
         modelPortSend();
         break;
     }
@@ -214,7 +250,7 @@ bool input(int index)
 
 uint32_t analog_input(int index)
 {
-    double x;
+    fptype x;
     switch (index) {
         case 0: x = modelState.Tpiec; break;
         case 1: x = modelState.Tpowr; break;
@@ -227,22 +263,22 @@ uint32_t analog_input(int index)
         case 8: x = -50; break;
         default: x = 20; break; // TODO: ASSERT
     }
-    //double raw = -0.2655244 * x * x + 139.607 * x + 34124.1915; // KTY81/210 + 1.5K resistor with 16-bit ADC
-    double raw = -0.19755154254 * x * x + 138.755151256 * x + 27791.13537582; // KTY81/210 + 2.21K resistor with 16-bit ADC
+    //fptype raw = -0.2655244_f * x * x + 139.607_f * x + 34124.1915_f; // KTY81/210 + 1.5K resistor with 16-bit ADC
+    fptype raw = -0.19755154254_f * x * x + 138.755151256_f * x + 27791.13537582_f; // KTY81/210 + 2.21K resistor with 16-bit ADC
     if (raw < 0) return 0;
     if (raw > 65535) return 65535;
-    return (uint32_t)(raw + 0.5);
+    return (uint32_t)(raw + 0.5_f);
 }
 
 uint32_t get_time()
 {
-    return (uint32_t)(uint64_t)(modelState.Time * 1000.0);
+    return (uint32_t)(uint64_t)(modelState.Time * 1000.0_f);
 }
 
 void timeout(uint32_t t)
 {
     int32_t diff = t - get_time();
-    timeoutLeft = (double)diff * 0.001;
+    timeoutLeft = (fptype)diff * 0.001_f;
 }
 
 void store_read(int slot, uint8_t* buffer, int size); // Implemented by low-level

@@ -7,7 +7,7 @@
 #include <string>
 #include <cstring>
 
-#include "../control/controlInterface.hh"
+#include "../../src/control/controlInterface.hh"
 
 #include "modelCommon.hh"
 #include "model.hh"

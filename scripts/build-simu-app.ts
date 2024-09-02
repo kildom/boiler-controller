@@ -7,15 +7,15 @@ const ROOT = path.resolve(path.dirname(process.argv[1]), '..');
 
 build({
     entryPoints: [
-        path.join(ROOT, 'src/graph/workerModel.ts'),
-        path.join(ROOT, 'src/graph/workerServer.ts'),
-        path.join(ROOT, 'src/graph/index.ts'),
+        path.join(ROOT, 'simu/app/worker-model.ts'),
+        path.join(ROOT, 'simu/app/worker-server.ts'),
+        path.join(ROOT, 'simu/app/index.ts'),
     ],
     bundle: true,
     sourcemap: true,
     minify: false,
     format: 'iife',
-    outdir: path.join(ROOT, 'dist'),
+    outdir: path.join(ROOT, 'dist_simu'),
     metafile: true,
     loader: {
         '.ttf': 'file',
@@ -26,14 +26,14 @@ build({
     },
     plugins: [
         copyStaticFiles({
-            src: path.join(ROOT, 'static'),
-            dest: path.join(ROOT, 'dist'),
+            src: path.join(ROOT, 'simu/app/static'),
+            dest: path.join(ROOT, 'dist_simu'),
             dereference: true,
             errorOnExist: false,
             recursive: true,
         }),
     ],
-}, true, path.join(ROOT, 'dist/web-meta.json'));
+}, true, path.join(ROOT, 'dist_simu/web-meta.json'));
 
 
 async function build(opts: BuildOptions, startServer: boolean, metaFileName: string) {
@@ -43,7 +43,7 @@ async function build(opts: BuildOptions, startServer: boolean, metaFileName: str
         let result = await ctx.serve({
             host: '127.0.0.1',
             port: 8080,
-            servedir: path.join(ROOT, 'dist'),
+            servedir: path.join(ROOT, 'dist_simu'),
         });
         console.log('Server running on:');
         console.log(`    http://${result.host}:${result.port}/`);

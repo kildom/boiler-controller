@@ -1,9 +1,10 @@
 /node_modules/
 /src/hw/Debug/
 /src/hw/Release/
-/src/simu/model-struct-generated.ts
+/simu/app/model-struct-generated.ts
 /ext/
 /dist/
+/dist_simu/
 /build/
 *.obj
 *.o

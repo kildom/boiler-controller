@@ -3,7 +3,7 @@
 #include <string>
 #include <cstring>
 
-#include "../control/controlInterface.hh"
+#include "../../src/control/controlInterface.hh"
 #include "../model/modelHandler.hh"
 
 #define WASM_EXPORT(name) \

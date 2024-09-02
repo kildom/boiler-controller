@@ -1,7 +1,7 @@
 
 CLANG_HOME = ../../ext/wasi-sdk-21.0
 
-TARGET = ../../dist/model.wasm
+TARGET = ../../dist_simu/model.wasm
 BUILD_TYPE := debug
 #BUILD_TYPE := release
 
@@ -24,24 +24,22 @@ endif
 CC=$(CLANG_HOME)/bin/clang --sysroot $(CLANG_HOME)/share/wasi-sysroot
 CXX=$(CLANG_HOME)/bin/clang++ --sysroot $(CLANG_HOME)/share/wasi-sysroot
 
-OBJ := $(patsubst ../../src/wasm/%.cc,$(OBJ_DIR)/src/wasm/%.cc.o,$(wildcard ../../src/wasm/*.cc))
-OBJ += $(patsubst ../../src/model/%.cc,$(OBJ_DIR)/src/model/%.cc.o,$(wildcard ../../src/model/*.cc))
+OBJ := $(patsubst ../../simu/wasm/%.cc,$(OBJ_DIR)/simu/wasm/%.cc.o,$(wildcard ../../simu/wasm/*.cc))
+OBJ += $(patsubst ../../simu/model/%.cc,$(OBJ_DIR)/simu/model/%.cc.o,$(wildcard ../../simu/model/*.cc))
 OBJ += $(patsubst ../../src/control/%.cc,$(OBJ_DIR)/src/control/%.cc.o,$(wildcard ../../src/control/*.cc))
-#OBJ += $(patsubst ../../firmware/%.c,$(OBJ_DIR)/firmware/%.c.o,$(wildcard ../../firmware/*.c))
-#OBJ += $(patsubst ../../firmware/%.cc,$(OBJ_DIR)/firmware/%.cc.o,$(wildcard ../../firmware/*.cc))
 
 all: $(TARGET)
 
 clean:
 	rm -Rf $(OBJ_DIR)
 	rm -f $(TARGET)
-	rm -f ../../src/graph/struct.ts
+	rm -f ../../simu/app/model-struct-generated.ts
 
-$(TARGET): $(OBJ) ../../src/graph/struct.ts Makefile
+$(TARGET): $(OBJ) ../../simu/app/model-struct-generated.ts Makefile
 	mkdir -p $(dir $@)
 	$(CXX) $(LDFLAGS) $(ALLFLAGS) $(OBJ) -o $@
 
-../../src/graph/struct.ts: ../../src/model/model.hh ../../scripts/build-struct.ts Makefile
+../../simu/app/model-struct-generated.ts: ../../simu/model/model.hh ../../scripts/build-struct.ts Makefile
 	npx tsx ../../scripts/build-struct.ts
 
 $(OBJ_DIR)/%.cpp.o: ../../%.cpp ../../build/include/autogen.inc Makefile
@@ -56,7 +54,7 @@ $(OBJ_DIR)/%.c.o: ../../%.c ../../build/include/autogen.inc Makefile
 	mkdir -p $(dir $@)
 	$(CC) -MMD -c $(CFLAGS) $(ALLFLAGS) $(word 1,$<) -o $@
 
-# ../../build/include/autogen.inc: $(wildcard ../control/*.hh) ../../scripts/autogen.ts Makefile
-# 	npx tsx ../../scripts/autogen.ts
+../../build/include/autogen.inc: $(wildcard ../../src/control/*.hh) ../../scripts/autogen-inc.ts Makefile
+	npx tsx ../../scripts/autogen-inc.ts
 
 -include $(patsubst %.o,%.d,$(OBJ))

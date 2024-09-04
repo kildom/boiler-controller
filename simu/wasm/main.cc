@@ -122,3 +122,10 @@ WASM_EXPORT(free)
 void wasmFree(void* ptr) {
     free(ptr);
 }
+
+void diag_log(int level, const char *message)
+{
+    WASM_IMPORT(log)
+    void wasmLog(int level, const char *message);
+    wasmLog(level, message);
+}

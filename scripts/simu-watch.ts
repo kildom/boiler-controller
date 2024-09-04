@@ -42,11 +42,7 @@ function build(clean: boolean = false) {
         }
     }
 
-    if (status != 0) {
-        console.error(`Compilation failed with status ${status}.`);
-    } else {
-        console.log(`Compilation success.`);
-    }
+    return status;
 }
 
 let filesQueued = new Set<string>();
@@ -75,8 +71,13 @@ function clearScreen() {
 
 async function main() {
     let watchers = new Map<string, fs.FSWatcher>();
-    build(true);
+    let status = build(true);
     while (true) {
+        if (status != 0) {
+            console.error(`\x1b[41mCompilation failed with status ${status}.\x1b[0m`);
+        } else {
+            console.log(`\x1b[32mCompilation success.\x1b[0m`);
+        }
         if (filesQueued.size == 0 && watchers.size > 0) {
             await new Promise<void>(resolve => { fileEventResolve = resolve });
         }
@@ -90,7 +91,7 @@ async function main() {
             console.log('-------------------------------------------------------------------------------');
         }
         filesQueued.clear();
-        build();
+        status = build();
         let newDeps = getDeps();
         let oldDeps = new Set(watchers.keys());
         for (let dep of [...newDeps].filter(x => !oldDeps.has(x))) {

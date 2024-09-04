@@ -1,6 +1,6 @@
 import * as modelWasm from "./model-wasm";
 import * as model from "./model";
-import { fatal, getSimulationMode, SerialInterface, SimulationMode } from "./simu-common";
+import { fatal, getSimulationMode, SerialInterface, SimulationMode, wait } from "./simu-common";
 
 
 function aaa() {
@@ -18,15 +18,21 @@ async function main() {
     let commIf: SerialInterface | undefined;
 
     if (mode === SimulationMode.SOFTWARE) {
+        console.log('Fully software simulation mode.');
         modelIf = modelWasm.modelInterface;
         commIf = modelWasm.commInterface;
-        modelWasm.initWasmModel();
+        await modelWasm.initWasmModel();
     } else {
+        console.log('HW simulation mode.');
         commIf = undefined;
         fatal('Not implemented yet');
     }
 
     await model.initialize(aaa, modelIf);
+
+    await wait(1000);
+    console.log('Started');
+    model.state.running = true;
 }
 
 

@@ -41,6 +41,7 @@ void comm_send(); // Send appended data, just raw data, SLIP encoding in upper l
 int diag_free(); // Free space in diagnostics FIFO
 void diag_append(uint8_t data); // Append data to FIFO
 void diag_send(); // Send appended data, just raw data
+void diag_log(int level, const char *message); // Log message (only for simulation)
 
 // Firmware update - for the future
 //void update_init(); // Update firmware start

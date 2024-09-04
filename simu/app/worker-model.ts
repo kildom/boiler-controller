@@ -1,5 +1,7 @@
 import { WorkerModelEvent } from "./simu-common";
 
+const decoder = new TextDecoder();
+
 interface WebAssemblyExports {
     memory: WebAssembly.Memory;
     _initialize(): void;
@@ -16,6 +18,7 @@ interface WebAssemblyImports {
         commSend(data: number, size: number): void;
         modelSend(data: number, size: number): void;
         time(): number;
+        log(level: number, messageOffset: number): void;
     };
     wasi_snapshot_preview1: {
         fd_close(): number;
@@ -59,6 +62,26 @@ function time(): number {
     return (Date.now() - startTime) & 0x7FFFFFFF;
 }
 
+function log(level: number, messageOffset: number): void {
+    let data = new Uint8Array(wasmExports.memory.buffer, messageOffset, Math.min(65536, wasmExports.memory.buffer.byteLength - messageOffset));
+    let length = 0;
+    while (data[length] !== 0 && length < data.length) {
+        length++;
+    }
+    let message = decoder.decode(new Uint8Array(wasmExports.memory.buffer, messageOffset, length));
+    switch (level) {
+        case 0:
+            console.debug(message);
+            break;
+        case 1:
+            console.info(message);
+            break;
+        default:
+            console.error(message);
+            break;
+    }
+};
+
 let bufferOffset = 0;
 let bufferSize = 0;
 
@@ -74,7 +97,7 @@ function getBuffer(size: number) {
 }
 
 async function reset() {
-    let imports: WebAssemblyImports = { env: { storeRead, storeWrite, commSend, modelSend, time }, wasi_snapshot_preview1: wasiStubs };
+    let imports: WebAssemblyImports = { env: { storeRead, storeWrite, commSend, modelSend, time, log }, wasi_snapshot_preview1: wasiStubs };
     model = await WebAssembly.instantiate(wasmModule, imports as unknown as WebAssembly.Imports);
     startTime = Date.now();
     wasmExports = model.exports as unknown as WebAssemblyExports;
@@ -84,9 +107,16 @@ async function reset() {
 }
 
 async function main() {
+    console.log('Loading storage...');
     await loadStorage();
+
+    console.log('Compiling WebAssembly module...');
     wasmModule = await WebAssembly.compileStreaming(fetch('model.wasm'));
+
+    console.log('Resetting module...');
     await reset();
+
+    console.log('Worker initialization done.');
     msg({ type: 'model', data: new Uint8Array() });
 }
 
@@ -108,7 +138,7 @@ let slotWriting = false;
 let slotData = [new Uint8Array(0), new Uint8Array(0)];
 
 export function storeRead(slot: number, dataOffset: number, size: number): void {
-    let buffer = new Uint8Array(exports.memory.buffer, dataOffset, size);
+    let buffer = new Uint8Array(wasmExports.memory.buffer, dataOffset, size);
     if (size != slotData[slot].length) {
         buffer.fill(0xFF);
     } else {
@@ -117,7 +147,7 @@ export function storeRead(slot: number, dataOffset: number, size: number): void 
 }
 
 export function storeWrite(state: number, slot: number, dataOffset: number, size: number): number {
-    let data = new Uint8Array(exports.memory.buffer, dataOffset, size).slice();
+    let data = new Uint8Array(wasmExports.memory.buffer, dataOffset, size).slice();
 
     if (state == 0) {
         if (slotWriting) {

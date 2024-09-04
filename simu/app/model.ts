@@ -53,11 +53,11 @@ export async function initialize(aListener: Listener, aSerial: SerialInterface):
 
 async function modelLoop() {
     let remoteStateBuffer = await readInitialState();
+    decode(remoteStateBuffer, state);
     let oldState = { ...state };
     let tempStateBuffer = new Uint8Array(sizes.state + sizes.params);
     let wasRunning = false;
     let paramsReadTimeout = Date.now() + 5000;
-    encode(state, remoteStateBuffer);
     listener();
     while (true) {
         // Send any pending diagnostic data
@@ -67,6 +67,8 @@ async function modelLoop() {
             await wait(200);
             wasRunning = false;
             continue;
+        } else if (!wasRunning) {
+            console.log("Simulation has started");
         }
         // Send any pending changes to device
         let sentChanges = compareStates(oldState, state);
@@ -107,7 +109,7 @@ async function sendStateChanges(fields: Set<string>, buffer: Uint8Array): Promis
     let index = 0;
     while (index < mask.length) {
         // Skip unchanged fields
-        while (index < fields.size && mask[index] === 0) {
+        while (index < mask.length && mask[index] === 0) {
             index++;
         }
         // Start at first changed field
@@ -122,7 +124,7 @@ async function sendStateChanges(fields: Set<string>, buffer: Uint8Array): Promis
         if (end > begin) {
             await exchangePackets([
                 CmdType.TYPE_WRITE, 2 + end - begin,
-                begin >> 8, begin && 0xFF,
+                begin && 0xFF, begin >> 8,
                 ...buffer.subarray(begin, end),
             ], false);
         }
@@ -142,30 +144,29 @@ async function runSimulation(remoteStateBuffer: Uint8Array, maxStepTime: number,
     let maxSimuTimeMs = Math.max(1000, Math.max(3, Math.round(maxSimuTime * 1000)));
     let response = await exchangePackets([
         CmdType.TYPE_RUN, 5,
-        maxStepTimeMs >> 8, maxStepTimeMs && 0xFF,
-        maxSimuTimeMs >> 8, maxSimuTimeMs && 0xFF,
+        maxStepTimeMs && 0xFF, maxStepTimeMs >> 8,
+        maxSimuTimeMs && 0xFF, maxSimuTimeMs >> 8,
         resetTimeState ? 1 : 0
     ], true);
     remoteStateBuffer.set(response, 0);
 }
 
-
-
-
 async function initTransmission() {
     // Reset transmission and initialize the model
     serial.send(new Uint8Array(255 + 2 + 2 + 8));
-    serial.send(new Uint8Array([CmdType.TYPE_INIT | 0x01, magicBytes.length, ...magicBytes, 0x00]));
+    serial.send(new Uint8Array([CmdType.TYPE_INIT | 0x01, magicBytes.length + 1, ...magicBytes, 0x00]));
     // Read incoming data until magic bytes are received
     let endTime = Date.now() + RESPONSE_TIMEOUT;
     while (true) {
-        for (let offset = 0; offset <= receiveBufferLength - magicBytes.length - 1; offset++) {
-            if (bufferEqual(magicBytes, new Uint8Array(receiveBuffer.buffer, offset, magicBytes.length))) {
-                // Set 32/64-bit floating point numbers mode
-                fptypeSize = receiveBuffer[offset + magicBytes.length];
-                setMode(fptypeSize);
-                break;
-            }
+        if (receiveBufferLength > magicBytes.length
+            && bufferEqual(magicBytes, new Uint8Array(receiveBuffer.buffer, receiveBufferLength - magicBytes.length - 1, magicBytes.length))
+        ) {
+            // Set 32/64-bit floating point numbers mode
+            fptypeSize = receiveBuffer[receiveBufferLength - 1];
+            setMode(fptypeSize);
+            console.log(`Model transmission initialized, fptype size: ${fptypeSize}, sizes:`, sizes);
+            receiveBufferLength = 0;
+            return;
         }
         await waitForData(endTime - Date.now());
     }
@@ -176,17 +177,17 @@ async function readInitialState(): Promise<Uint8Array> {
     let response = await exchangePackets([
         CmdType.TYPE_READ, 4,
         0, 0,
-        totalSize >> 8, totalSize & 0xFF
+        totalSize & 0xFF, totalSize >> 8
     ], true);
-    decode(response, state);
+    console.log(`Initial state size ${response.length}, expected ${totalSize}`);
     return response;
 }
 
 async function readParameters(buffer: Uint8Array): Promise<void> {
     let response = await exchangePackets([
         CmdType.TYPE_READ, 4,
-        sizes.state >> 8, sizes.state & 0xFF,
-        sizes.params >> 8, sizes.params & 0xFF,
+        sizes.state & 0xFF, sizes.state >> 8,
+        sizes.params & 0xFF, sizes.params >> 8,
     ], true);
     buffer.set(response, sizes.state);
 }
@@ -209,19 +210,20 @@ async function exchangePackets(input: number[] | Uint8Array, chainResponse: bool
             firstNonZero++;
         }
         if (firstNonZero > 0) {
-            receiveBuffer.copyWithin(0, firstNonZero, receiveBufferLength - firstNonZero);
+            receiveBuffer.copyWithin(0, firstNonZero, receiveBufferLength);
             receiveBufferLength -= firstNonZero;
         }
         // Loop over all fully received packets
         while (receiveBufferLength >= 2 && receiveBufferLength >= 2 + receiveBuffer[1]) {
             // Interpret the packet
-            let dataSize = receiveBuffer[1];
             let receivedHead = receiveBuffer[0];
+            let dataSize = receiveBuffer[1];
             let packetType = receivedHead & CmdType.TYPE_MASK;
             let packetId = receivedHead & ~CmdType.TYPE_MASK;
-            let packetData = receiveBuffer.slice(2, dataSize);
+            let packetData = receiveBuffer.slice(2, 2 + dataSize);
             // Remove packet from the buffer
-            receiveBuffer.copyWithin(0, 2 + dataSize, receiveBufferLength - 2 - dataSize);
+            receiveBuffer.copyWithin(0, 2 + dataSize, receiveBufferLength);
+            receiveBufferLength -= 2 + dataSize;
             // Pass the packet to appropriate destination
             if (packetType == CmdType.TYPE_DIAG && packetId === 0) {
                 // This is incoming diag data, so redirect it to diag interface
@@ -230,10 +232,12 @@ async function exchangePackets(input: number[] | Uint8Array, chainResponse: bool
                 // We received a correct response
                 if (packetChain) {
                     packetChain.push(packetData);
-                    if (packetData.length < 255 && packetChain.length > 1) {
-                        return concatenateBuffers(packetChain);
-                    } else {
-                        return packetData;
+                    if (packetData.length < 255) {
+                        if (packetChain.length > 1) {
+                            return concatenateBuffers(packetChain);
+                        } else {
+                            return packetData;
+                        }
                     }
                 } else {
                     return packetData;

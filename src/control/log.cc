@@ -15,6 +15,7 @@ static uint8_t dropped[MAX_LEVEL + 1] = { 0, 0, 0 };
 
 void log_send(int level)
 {
+    diag_log(level, log_buffer);
     Diag::log(log_buffer);
     size_t len = strlen(log_buffer);
     size_t free = Proto::available();

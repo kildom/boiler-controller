@@ -17,14 +17,21 @@ export const commInterface: SerialInterface = {
     }
 }
 
-export function initWasmModel() {
-    worker = new Worker('worker-model.js');
-    worker.onmessage = event => {
-        let data = event.data as WorkerModelEvent;
-        if (data.type === 'comm') {
-            commInterface.onReceive?.(data.data);
-        } else if (data.type === 'model') {
-            modelInterface.onReceive?.(data.data);
+export function initWasmModel(): Promise<void> {
+    return new Promise<void>(resolve => {
+        let resolved = false;
+        worker = new Worker('worker-model.js', { name: 'Model' });
+        worker.onmessage = event => {
+            if (!resolved) {
+                resolve();
+                resolved = true;
+            }
+            let data = event.data as WorkerModelEvent;
+            if (data.type === 'comm') {
+                commInterface.onReceive?.(data.data);
+            } else if (data.type === 'model') {
+                modelInterface.onReceive?.(data.data);
+            }
         }
-    }
+    });
 }

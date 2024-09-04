@@ -151,7 +151,10 @@ struct State {
     {
 
         // Parametry symulacji
-        speed = 1;       // param Prędkość symulacji
+        speed = 1;         // param Prędkość symulacji
+        maxStepTime = 0.1; // param Maksymalny czas kroku symulacji
+        maxSimuTime = 0.2; // param Maksymalny czas ciągłej pracy symulacji
+        running = false;   // param Praca symulacji
 
         // Ogólne
         Time = 0;        // calc  Czas od początku symulacji

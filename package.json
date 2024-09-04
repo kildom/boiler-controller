@@ -6,11 +6,10 @@
   "type": "module",
   "main": "vis.js",
   "scripts": {
-    "ts-watch": "npx tsc --watch --preserveWatchOutput --project simu/tsconfig.json",
-    "cpp-watch": "npx ts-node-esm simu/model/watch.ts",
-    "server": "npx http-server simu/web -a 127.0.0.1 -p 9592 -c-1",
-    "copy-modules": "node -p 'require(\"fs\").copyFileSync(\"node_modules/xterm/lib/xterm.js\", \"simu/web/xterm.js\"); require(\"fs\").copyFileSync(\"node_modules/xterm/css/xterm.css\", \"simu/web/xterm.css\"); require(\"fs\").copyFileSync(\"node_modules/xterm-addon-fit/lib/xterm-addon-fit.js\", \"simu/web/xterm-addon-fit.js\")'",
-    "run": "concurrently -c blue,magenta,red,white npm:ts-watch npm:cpp-watch npm:server npm:copy-modules"
+    "simu-server": "npx tsx scripts/build-simu-app.ts s",
+    "simu-watch": "npx tsx scripts/simu-watch.ts",
+    "simu-copy-modules": "node -p 'require(\"fs\").copyFileSync(\"node_modules/xterm/lib/xterm.js\", \"dist_simu/xterm.js\"); require(\"fs\").copyFileSync(\"node_modules/xterm/css/xterm.css\", \"dist_simu/xterm.css\"); require(\"fs\").copyFileSync(\"node_modules/xterm-addon-fit/lib/xterm-addon-fit.js\", \"dist_simu/xterm-addon-fit.js\")'",
+    "simu-run": "concurrently -c blue,magenta,white npm:simu-server npm:simu-watch npm:simu-copy-modules"
   },
   "author": "",
   "license": "ISC",

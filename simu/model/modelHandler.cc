@@ -11,6 +11,7 @@
 
 #include "modelCommon.hh"
 #include "model.hh"
+#include "../../src/control/log.hh"
 #include "modelHandler.hh"
 
 enum CmdType {
@@ -71,6 +72,7 @@ static size_t diagBufferLength = 2;
 static uint8_t* const stateBufferBegin = (uint8_t*)&modelState._MODEL_BEGIN_STATE_FIELD;
 static uint8_t* const paramsBufferBegin = (uint8_t*)&modelState._MODEL_BEGIN_PARAMS_FIELD;
 static uint8_t* const paramsBufferEnd = (uint8_t*)&modelState._MODEL_END_PARAMS_FIELD + sizeof(modelState._MODEL_END_PARAMS_FIELD);
+static const size_t stateSize = paramsBufferEnd - stateBufferBegin;
 static Packet packet;
 static uint8_t* const packetBuffer = (uint8_t*)&packet;
 static size_t packetSize = 0;
@@ -141,8 +143,8 @@ void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeStat
 
 void modelPacketReceived()
 {
-    uint8_t* ptr = nullptr;
-    size_t size = 0;
+    size_t offsetBegin = 0;
+    size_t offsetEnd = 0;
     uint16_t maxStepTimeMs;
     uint16_t maxSimuTimeMs = 0;
     bool resetTimeState;
@@ -169,18 +171,18 @@ void modelPacketReceived()
         maxStepTimeMs = packet.run.maxStepTimeMs;
         maxSimuTimeMs = packet.run.maxSimuTimeMs;
         resetTimeState = !!packet.run.resetTimeState;
-        ptr = stateBufferBegin;
-        size = paramsBufferBegin - stateBufferBegin;
+        offsetBegin = 0;
+        offsetEnd = paramsBufferBegin - stateBufferBegin;
         __attribute__((fallthrough)); // no break here
 
     case TYPE_READ:
-        if (ptr == nullptr) {
-            ptr = paramsBufferBegin + (size_t)packet.readRequest.offset;
-            size = packet.readRequest.size;
+        if (offsetEnd == 0) {
+            offsetBegin = (size_t)packet.readRequest.offset;
+            offsetEnd = offsetBegin + (size_t)packet.readRequest.size;
         }
-        for (size_t offset = 0; offset <= size; offset += 255) {
-            packet.dataSize = std::min((size_t)255, sizeof(State) - offset);
-            std::memcpy(packet.readResponse.data, &ptr[offset], packet.dataSize);
+        for (offsetBegin = offsetBegin; offsetBegin <= offsetEnd; offsetBegin += 255) {
+            packet.dataSize = std::min((size_t)255, offsetEnd - offsetBegin);
+            std::memcpy(packet.readResponse.data, &stateBufferBegin[offsetBegin], packet.dataSize);
             modelPortAppend(packetBuffer, (size_t)packet.dataSize + 2);
         }
         modelPortSend();
@@ -195,11 +197,17 @@ void modelPacketReceived()
         modelPortAppend(packetBuffer, 2);
         modelPortSend();
         break;
+    default:
+        ERR("Unknown model packet type.");
     }
 }
 
 void modelPortEvent(const uint8_t* data, size_t size)
 {
+    while (packetSize == 0 && *data == 0 && size > 0) {
+        data++;
+        size--;
+    }
     const uint8_t* end = data + size;
     while (data < end) {
         packetBuffer[packetSize++] = *data++;
@@ -291,7 +299,7 @@ void comm_send(); // Implemented by low-level
 
 int diag_free()
 {
-    int free = modelPortFree() - sizeof(State) - (sizeof(State) + 254) / 255 * 2 - 32;
+    int free = modelPortFree() - stateSize - (stateSize + 254) / 255 * 2 - 32;
     int freeFullPackets = free / 257;
     int freeRemaining = free % 257 - 2;
     if (freeRemaining < 0) freeRemaining = 0;

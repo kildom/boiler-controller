@@ -17,10 +17,9 @@ let listener: Listener;
 let serial: SerialInterface;
 let packetId: number = 1;
 let magicBytes: Uint8Array;
-let fptypeSize = 4;
 let receiveBuffer = new Uint8Array(65536);
 let receiveBufferLength = 0;
-const diagToSend: Uint8Array[] = [];
+const diagDataToSend: Uint8Array[] = [];
 
 let dataResolveFunc: undefined | ((value: void | PromiseLike<void>) => void) = undefined;
 
@@ -32,7 +31,7 @@ export const state: State = {} as State;
 
 export const diagInterface: SerialInterface = {
     send(data: Uint8Array): void {
-        diagToSend.push(data.slice());
+        diagDataToSend.push(data.slice());
     },
 };
 
@@ -58,6 +57,7 @@ async function modelLoop() {
     let tempStateBuffer = new Uint8Array(sizes.state + sizes.params);
     let wasRunning = false;
     let paramsReadTimeout = Date.now() + 5000;
+    let sleepTime = 0.01;
     listener();
     while (true) {
         // Send any pending diagnostic data
@@ -78,7 +78,7 @@ async function modelLoop() {
             await sendStateChanges(sentChanges, tempStateBuffer);
         }
         // Read also parameters from device once every 5 sec.
-        if (Date.now() >= paramsReadTimeout) {
+        if (sentChanges.size > 0 || Date.now() >= paramsReadTimeout) {
             paramsReadTimeout = Date.now() + 5000;
             await readParameters(remoteStateBuffer);
         }
@@ -86,19 +86,27 @@ async function modelLoop() {
         await runSimulation(remoteStateBuffer, state.maxStepTime, state.maxSimuTime, !wasRunning);
         let remoteState = {} as State;
         decode(remoteStateBuffer, remoteState);
+        // Sleep for calculated time to avoid overhead
+        sleepTime = sleepTime * 0.8 + remoteState.SlowDown * 0.2;
+        if (sleepTime < 0.004) {
+            state.speed *= 0.98;
+            sleepTime = 0.004;
+        }
+        await wait(Math.ceil(900 * sleepTime));
         // Put remote changes into local state except fields that were changed recently
         let newChanges = compareStates(oldState, state);
-        updateState(remoteState, (sentChanges as any).union(newChanges));
+        updateState(remoteState, oldState, (sentChanges as any).union(newChanges));
         // Notify listener
         listener();
         wasRunning = true;
     }
 }
 
-function updateState(remoteState: State, sentChanges: Set<string>) {
+function updateState(remoteState: State, oldState: State, sentChanges: Set<string>) {
     for (let name in state) {
         if (!sentChanges.has(name)) {
             state[name] = remoteState[name];
+            oldState[name] = remoteState[name];
         }
     }
 }
@@ -124,7 +132,7 @@ async function sendStateChanges(fields: Set<string>, buffer: Uint8Array): Promis
         if (end > begin) {
             await exchangePackets([
                 CmdType.TYPE_WRITE, 2 + end - begin,
-                begin && 0xFF, begin >> 8,
+                begin & 0xFF, begin >> 8,
                 ...buffer.subarray(begin, end),
             ], false);
         }
@@ -140,12 +148,12 @@ function compareStates(a: State, b: State) {
 }
 
 async function runSimulation(remoteStateBuffer: Uint8Array, maxStepTime: number, maxSimuTime: number, resetTimeState: boolean) {
-    let maxStepTimeMs = Math.max(1000, Math.max(3, Math.round(maxStepTime * 1000)));
-    let maxSimuTimeMs = Math.max(1000, Math.max(3, Math.round(maxSimuTime * 1000)));
+    let maxStepTimeMs = Math.min(500, Math.max(3, Math.round(maxStepTime * 1000)));
+    let maxSimuTimeMs = Math.min(1000, Math.max(3, Math.round(maxSimuTime * 1000)));
     let response = await exchangePackets([
         CmdType.TYPE_RUN, 5,
-        maxStepTimeMs && 0xFF, maxStepTimeMs >> 8,
-        maxSimuTimeMs && 0xFF, maxSimuTimeMs >> 8,
+        maxStepTimeMs & 0xFF, maxStepTimeMs >> 8,
+        maxSimuTimeMs & 0xFF, maxSimuTimeMs >> 8,
         resetTimeState ? 1 : 0
     ], true);
     remoteStateBuffer.set(response, 0);
@@ -162,7 +170,7 @@ async function initTransmission() {
             && bufferEqual(magicBytes, new Uint8Array(receiveBuffer.buffer, receiveBufferLength - magicBytes.length - 1, magicBytes.length))
         ) {
             // Set 32/64-bit floating point numbers mode
-            fptypeSize = receiveBuffer[receiveBufferLength - 1];
+            let fptypeSize = receiveBuffer[receiveBufferLength - 1];
             setMode(fptypeSize);
             console.log(`Model transmission initialized, fptype size: ${fptypeSize}, sizes:`, sizes);
             receiveBufferLength = 0;
@@ -252,8 +260,8 @@ async function exchangePackets(input: number[] | Uint8Array, chainResponse: bool
 }
 
 async function sendDiagData() {
-    while (diagToSend.length > 0) {
-        let list = diagToSend.splice(0);
+    while (diagDataToSend.length > 0) {
+        let list = diagDataToSend.splice(0);
         let totalSize = list.map(d => d.length).reduce((s, d) => s + d, 0);
         let buffer = new Uint8Array(totalSize);
         let offset = 0;

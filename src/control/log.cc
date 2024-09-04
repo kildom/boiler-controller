@@ -16,6 +16,7 @@ static uint8_t dropped[MAX_LEVEL + 1] = { 0, 0, 0 };
 void log_send(int level)
 {
     diag_log(level, log_buffer);
+#if 0 // TODO: if !wasm
     Diag::log(log_buffer);
     size_t len = strlen(log_buffer);
     size_t free = Proto::available();
@@ -36,6 +37,7 @@ void log_send(int level)
     Proto::data((uint8_t*)log_buffer, len);
     Proto::end();
     memset(dropped, 0, sizeof(dropped));
+#endif
 }
 
 const char* log_file_name(const char* file)

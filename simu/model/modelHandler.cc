@@ -69,10 +69,9 @@ State modelState;
 
 static uint8_t diagBuffer[2048 + 2];
 static size_t diagBufferLength = 2;
-static uint8_t* const stateBufferBegin = (uint8_t*)&modelState._MODEL_BEGIN_STATE_FIELD;
-static uint8_t* const paramsBufferBegin = (uint8_t*)&modelState._MODEL_BEGIN_PARAMS_FIELD;
-static uint8_t* const paramsBufferEnd = (uint8_t*)&modelState._MODEL_END_PARAMS_FIELD + sizeof(modelState._MODEL_END_PARAMS_FIELD);
-static const size_t stateSize = paramsBufferEnd - stateBufferBegin;
+static uint8_t* const stateBuffer = (uint8_t*)&modelState._MODEL_BEGIN_FIELD;
+static const size_t stateBufferSize = (uint8_t*)&modelState._MODEL_END_FIELD + sizeof(modelState._MODEL_END_FIELD) - (uint8_t*)&modelState._MODEL_BEGIN_FIELD;
+static const size_t paramsOffset = (uint8_t*)&modelState._MODEL_BEGIN_PARAMS_FIELD - (uint8_t*)&modelState._MODEL_BEGIN_FIELD;
 static Packet packet;
 static uint8_t* const packetBuffer = (uint8_t*)&packet;
 static size_t packetSize = 0;
@@ -105,12 +104,16 @@ void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeStat
     expectedSimulationRunTime += (fptype)realTimeDelta * 0.001_f;
 
     fptype runTimeToDo = std::min((fptype)maxSimuTimeMs * 0.001_f, expectedSimulationRunTime - simulationRunTime);
+    modelState.SlowDown = (fptype)maxSimuTimeMs * 0.001_f - runTimeToDo;
 
     if (runTimeToDo < 0.001_f) {
         return;
     }
 
-    fptype simulationTimeStart = modelState.Time;
+    if (expectedSimulationRunTime - simulationRunTime > (fptype)maxSimuTimeMs * 0.004_f) {
+        expectedSimulationRunTime = simulationRunTime + (fptype)maxSimuTimeMs * 0.004_f;
+    }
+
     fptype simulationTimeEnd = modelState.Time + runTimeToDo * modelState.speed;
     fptype maxStepTime = (fptype)maxStepTimeMs * 0.001_f;
 
@@ -121,6 +124,7 @@ void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeStat
         if (timeoutLeft <= maxStepTime) {
             if (timeoutLeft > 0.00000001_f) {
                 modelState.step(timeoutLeft);
+                simulationRunTime += timeoutLeft / modelState.speed;
             }
             timeoutLeft = (fptype)PERIODIC_TIMEOUT / 1000.0_f;
             timeout_event();
@@ -143,8 +147,8 @@ void simulate(uint32_t maxStepTimeMs, uint32_t maxSimuTimeMs, bool resetTimeStat
 
 void modelPacketReceived()
 {
-    size_t offsetBegin = 0;
-    size_t offsetEnd = 0;
+    size_t readBegin = 0;
+    size_t readEnd = 0;
     uint16_t maxStepTimeMs;
     uint16_t maxSimuTimeMs = 0;
     bool resetTimeState;
@@ -171,18 +175,18 @@ void modelPacketReceived()
         maxStepTimeMs = packet.run.maxStepTimeMs;
         maxSimuTimeMs = packet.run.maxSimuTimeMs;
         resetTimeState = !!packet.run.resetTimeState;
-        offsetBegin = 0;
-        offsetEnd = paramsBufferBegin - stateBufferBegin;
+        readBegin = 0;
+        readEnd = paramsOffset;
         __attribute__((fallthrough)); // no break here
 
     case TYPE_READ:
-        if (offsetEnd == 0) {
-            offsetBegin = (size_t)packet.readRequest.offset;
-            offsetEnd = offsetBegin + (size_t)packet.readRequest.size;
+        if (readEnd == 0) {
+            readBegin = (size_t)packet.readRequest.offset;
+            readEnd = readBegin + (size_t)packet.readRequest.size;
         }
-        for (offsetBegin = offsetBegin; offsetBegin <= offsetEnd; offsetBegin += 255) {
-            packet.dataSize = std::min((size_t)255, offsetEnd - offsetBegin);
-            std::memcpy(packet.readResponse.data, &stateBufferBegin[offsetBegin], packet.dataSize);
+        for (readBegin = readBegin; readBegin <= readEnd; readBegin += 255) {
+            packet.dataSize = std::min((size_t)255, readEnd - readBegin);
+            std::memcpy(packet.readResponse.data, &stateBuffer[readBegin], packet.dataSize);
             modelPortAppend(packetBuffer, (size_t)packet.dataSize + 2);
         }
         modelPortSend();
@@ -192,7 +196,11 @@ void modelPacketReceived()
         break;
   
     case TYPE_WRITE:
-        std::memcpy(&stateBufferBegin[packet.write.offset], packet.write.data, packet.dataSize - 2);
+        if (packet.write.offset + packet.dataSize - 2u > stateBufferSize) {
+            ERR("Write out of range, 0x%08X + 0x%08X > 0x%08X", (unsigned)packet.write.offset, (unsigned)(packet.dataSize - 2u), (unsigned)stateBufferSize);
+            return;
+        }
+        std::memcpy(&stateBuffer[packet.write.offset], packet.write.data, packet.dataSize - 2);
         packet.dataSize = 0;
         modelPortAppend(packetBuffer, 2);
         modelPortSend();
@@ -299,7 +307,7 @@ void comm_send(); // Implemented by low-level
 
 int diag_free()
 {
-    int free = modelPortFree() - stateSize - (stateSize + 254) / 255 * 2 - 32;
+    int free = modelPortFree() - stateBufferSize - (stateBufferSize + 254) / 255 * 2 - 32;
     int freeFullPackets = free / 257;
     int freeRemaining = free % 257 - 2;
     if (freeRemaining < 0) freeRemaining = 0;

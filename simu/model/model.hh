@@ -12,10 +12,11 @@
 struct State {
     // BEGIN STATE
 
-#define _MODEL_BEGIN_STATE_FIELD Time
+#define _MODEL_BEGIN_FIELD Time
 
     // Ogólne
     fptype Time;        // calc  Czas od początku symulacji
+    fptype SlowDown;    // calc  Czas, który powinien odczekać kontroler symulacji, żeby nie robić zbyt dużego overheadu
 
     // Kocioł na pellet
     fptype Tpowr;       // calc  Temperatura powrotu
@@ -128,7 +129,7 @@ struct State {
     fptype ZasTwdelta;  // param Jak szybko upływa temperatura ze zbiornika [°C/s].
     fptype ZasTwmin;    // param Minimalna temeratura zasobnika
 
-#define _MODEL_END_PARAMS_FIELD ZasTwmin
+#define _MODEL_END_FIELD ZasTwmin
 
     // END PARAMS
 
@@ -152,12 +153,13 @@ struct State {
 
         // Parametry symulacji
         speed = 1;         // param Prędkość symulacji
-        maxStepTime = 0.1; // param Maksymalny czas kroku symulacji
-        maxSimuTime = 0.2; // param Maksymalny czas ciągłej pracy symulacji
+        maxStepTime = 0.05;// param Maksymalny czas kroku symulacji
+        maxSimuTime = 0.3; // param Maksymalny czas ciągłej pracy symulacji
         running = false;   // param Praca symulacji
 
         // Ogólne
         Time = 0;        // calc  Czas od początku symulacji
+        SlowDown = 0;    // calc  Czas, który powinien odczekać kontroler symulacji, żeby nie robić zbyt dużego overheadu
         OpenTime = 120;    // param Czas otwarcia zaworu
 
         // Kocioł na pellet

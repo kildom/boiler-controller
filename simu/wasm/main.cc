@@ -15,9 +15,9 @@
     __attribute__((used)) \
     __attribute__((import_name(#name)))
 
-static std::basic_string<uint8_t> commSendBuffer(0);
-static std::basic_string<uint8_t> debugReceiveBuffer(0);
-static std::basic_string<uint8_t> debugSendBuffer(0);
+static std::string commSendBuffer(0);
+static std::string debugReceiveBuffer(0);
+static std::string debugSendBuffer(0);
 
 void global_init()
 {
@@ -51,7 +51,7 @@ void comm_send()
 {
     WASM_IMPORT(commSend)
     void commSend(uint8_t* data, int size);
-    commSend(commSendBuffer.data(), commSendBuffer.size());
+    commSend((uint8_t*)commSendBuffer.data(), commSendBuffer.size());
     commSendBuffer.clear();
 }
 
@@ -89,7 +89,7 @@ void modelPortSend()
 {
     WASM_IMPORT(modelSend)
     void modelSend(const uint8_t* data, int size);
-    modelSend(debugSendBuffer.c_str(), debugSendBuffer.length());
+    modelSend((uint8_t*)debugSendBuffer.c_str(), debugSendBuffer.length());
     debugSendBuffer.clear();
 }
 

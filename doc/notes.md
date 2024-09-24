@@ -91,6 +91,9 @@ Rapsberry PI configuration:
    * Install go: `sudo snap install go --classic`, `sudo snap install goreleaser --classic`
    * Build UI from `BUILD.md`
    * build bin: `goreleaser release --clean --skip-publish --skip-validate --config .goreleaser-linux-armv6.yml`
+ * The Rapsberry PI Zero has one UART, so it have to be used for controller
+   * Second can be software serial port: https://forums.raspberrypi.com/viewtopic.php?t=324183
+   * It must be configured as terminal with small bound rate, e.g. 9600
 
 Old ideas for GUI:
 * https://botland.com.pl/moduly-nanopi/14635-nanopi-neo-v14-allwinner-h3-quad-core-12ghz-512mb-ram-bez-zlaczy-5904422377656.html

@@ -11,4 +11,5 @@
     It is used to simulate the the system.
   * `wasm` - The WebAssembly interface for fully software simulation.
 * `web` - The web GUI interface.
+* `server` - Node.js HTTP server, monitor, gateway.
 * `scripts` - The utility scripts.

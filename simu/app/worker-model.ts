@@ -126,7 +126,7 @@ onmessage = (e: MessageEvent<WorkerModelEvent>) => {
     let offset = getBuffer(data.length);
     new Uint8Array(wasmExports.memory.buffer, offset, data.length).set(data);
     if (msg.type === 'comm') {
-        wasmExports.modelRecv(offset, data.length);
+        wasmExports.commRecv(offset, data.length);
     } else if (msg.type === 'model') {
         wasmExports.modelRecv(offset, data.length);
     }

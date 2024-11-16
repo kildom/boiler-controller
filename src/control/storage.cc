@@ -38,6 +38,10 @@ static const Storage storageInit = {
         .map = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, },
         .invert = 0,
     },
+    .input = {
+        .map = { 0, 1, },
+        .invert = 0,
+    },
     .temp = {
         .map = { 0, 1, 2, 3, 4, 5, },
     },
@@ -124,7 +128,7 @@ void Storage::update()
         }
         // Clear dirty flag, because we just starting write
         slot_dirty_flags &= ~(1 << write_slot);
-        ERR("Writing to slot %d", write_slot);
+        DBG("Writing to slot %d", write_slot);
     }
 
     store_write(&write_state, write_slot, writeBuffer, PERSISTENT_SIZE);
@@ -133,8 +137,11 @@ void Storage::update()
 
 void Storage::write()
 {
-    storage.ver++;
-    storage.crc = getCrc();
-    memcpy(snapBuffer, &storage, PERSISTENT_SIZE);
+    if (memcmp(snapBuffer, &storage, PERSISTENT_SIZE) != 0) {
+        storage.ver++;
+        storage.crc = getCrc();
+        memcpy(snapBuffer, &storage, PERSISTENT_SIZE);
+        slot_dirty_flags |= (SLOT0_DIRTY | SLOT1_DIRTY);
+    }
 }
 

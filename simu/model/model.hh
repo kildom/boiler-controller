@@ -174,7 +174,7 @@ struct State {
         Tele = 36;         // mod   Temperatura wyjścia kotła elektrycznego
         Tzadele = 36;      // param Temperatura zadana kotła elektrycznego
         P4 = 0;           // calc  Przepływ pompy kotła elektrycznego
-        P4v = 1;          // param Przepływ pompy kotła elektrycznego, gdy pracuje
+        P4v = 2;          // param Przepływ pompy kotła elektrycznego, gdy pracuje
         Rele = 0;         // mod   Załączenie pompy przez kocioł elekt.
         EleCzasStart = 240; // param Czas startu kotła elektrycznego
         EleCzasStop = 60;  // param Czas zatrzymania kotła elektrycznego

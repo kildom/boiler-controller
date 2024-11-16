@@ -1,5 +1,8 @@
+import * as xterm from 'xterm';
+import * as xtermAddonFit from 'xterm-addon-fit';
 import * as modelWasm from "./model-wasm";
 import * as model from "./model";
+import "xterm/css/xterm.css";
 import { fatal, getSimulationMode, SerialInterface, SimulationMode, wait } from "./simu-common";
 
 let s: any = undefined;
@@ -144,7 +147,10 @@ async function updateVisualization() {
 
 
 async function main() {
+    initTerm();
+
     let mode = getSimulationMode();
+
     if (mode === undefined) {
         fatal('<>No simulation mode selected. Choose <a href="#sw">SOFTWARE</a> or <a href="#hw">HARDWARE</a>.');
     }
@@ -175,4 +181,29 @@ async function main() {
 
 window.onload = () => {
     main();
+}
+
+let term: xterm.Terminal;
+let fitAddon: xtermAddonFit.FitAddon;
+let encoder = new TextEncoder();
+
+function diagTermInput(data: string) {
+    let bin = encoder.encode(data);
+    model.diagInterface?.send?.(bin);
+}
+
+function initTerm() {
+    let container = document.querySelector<HTMLElement>('#terminal') as HTMLElement;
+    term = new xterm.Terminal();
+    fitAddon = new xtermAddonFit.FitAddon();
+    term.loadAddon(fitAddon);
+    term.onData(diagTermInput);
+    term.open(container);
+    fitAddon.fit();
+    window.addEventListener('resize', () => {
+        fitAddon.fit();
+    });
+    model.diagInterface.onReceive = (data: Uint8Array) => {
+        term.write(data);
+    }
 }

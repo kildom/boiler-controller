@@ -13,11 +13,15 @@ public:
         INPUTS_COUNT = 2,
     };
 
+    struct Storage {
+        uint8_t map[INPUTS_COUNT];
+        uint32_t invert; // low level indexing (without mapping)
+    };
+
     static inline int heatRoom() { return get(HEAT_ROOM); }
     static inline int pelletPodawany() { return get(PELLET_PODAWANY); }
 
-    static int get(Index index) { return input(index); }
-
+    static bool get(Index index);
 };
 
 #endif

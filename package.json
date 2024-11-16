@@ -8,8 +8,7 @@
   "scripts": {
     "simu-server": "npx tsx scripts/build-simu-app.ts s",
     "simu-watch": "npx tsx scripts/simu-watch.ts",
-    "simu-copy-modules": "node -p 'require(\"fs\").copyFileSync(\"node_modules/xterm/lib/xterm.js\", \"dist_simu/xterm.js\"); require(\"fs\").copyFileSync(\"node_modules/xterm/css/xterm.css\", \"dist_simu/xterm.css\"); require(\"fs\").copyFileSync(\"node_modules/xterm-addon-fit/lib/xterm-addon-fit.js\", \"dist_simu/xterm-addon-fit.js\")'",
-    "simu-run": "concurrently -c blue,magenta,white npm:simu-server npm:simu-watch npm:simu-copy-modules"
+    "simu-run": "concurrently -c blue,magenta npm:simu-server npm:simu-watch"
   },
   "author": "",
   "license": "ISC",

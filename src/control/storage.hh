@@ -4,6 +4,7 @@
 #include "global.hh"
 #include "zawor.hh"
 #include "relays.hh"
+#include "inputs.hh"
 #include "temp.hh"
 
 struct Storage {
@@ -11,6 +12,7 @@ struct Storage {
     uint32_t ver;
 
     Relay::Storage relay;
+    Input::Storage input;
     Temp::Storage temp;
 
     // -> BEGIN

@@ -27,9 +27,9 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="true"
-     inkscape:zoom="2.3607938"
-     inkscape:cx="836.37123"
-     inkscape:cy="554.8981"
+     inkscape:zoom="0.83466665"
+     inkscape:cx="516.97285"
+     inkscape:cy="318.6901"
      inkscape:window-width="1920"
      inkscape:window-height="1131"
      inkscape:window-x="0"
@@ -850,8 +850,8 @@
        d="M 240,240 H 360"
        id="path16768" />
     <path
-       id="path21618"
-       style="opacity:1;vector-effect:none;fill:#2e2e2e;stroke-width:0.800001;stop-color:#000000;stop-opacity:1"
+       id="IN1"
+       style="opacity:1;fill:#909090;stroke-width:2.2;stop-color:#000000;stop-opacity:1;stroke:#000000;stroke-opacity:1;fill-opacity:1;stroke-dasharray:none"
        inkscape:transform-center-x="-3.38e-05"
        inkscape:transform-center-y="10.000001"
        d="M 40.03734,559.86283 10.03733,519.5596 10,470 l 79.983198,0.21179 -0.03733,49.13601 -30.037318,40.58966 z"
@@ -957,7 +957,7 @@
        transform="translate(519.05776,-155.41518)">
       <rect
          style="font-variation-settings:normal;fill:#c9c9c9;fill-opacity:1;stroke:#4d4d4d;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
-         id="rect13549-8-1"
+         id="IN0"
          width="80"
          height="29.951063"
          x="170"

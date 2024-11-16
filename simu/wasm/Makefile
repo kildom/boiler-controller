@@ -2,12 +2,12 @@
 CLANG_HOME = ../../ext/wasi-sdk-21.0
 
 TARGET = ../../dist_simu/model.wasm
-BUILD_TYPE := debug
-#BUILD_TYPE := release
+#BUILD_TYPE := debug
+BUILD_TYPE := release
 
 OBJ_DIR := ../../build/wasm_obj
 
-ALLFLAGS := -fno-exceptions
+ALLFLAGS := -fno-exceptions -mno-atomics -mno-exception-handling -mno-extended-const -mno-mutable-globals
 
 CFLAGS := -I../../build/include
 

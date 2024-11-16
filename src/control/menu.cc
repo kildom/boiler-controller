@@ -353,6 +353,29 @@ static const BoolCallbacks relayInvertCbk = {
 };
 
 
+// input invert item handler
+
+static bool inputInvertRead(const MenuItem* item)
+{
+    auto i = (int)item->sub;
+    return storage.input.invert & (1 << i) ? true : false;
+}
+
+static void inputInvertWrite(const MenuItem* item, bool value)
+{
+    auto i = (int)item->sub;
+    if (value) {
+        storage.input.invert |= (1 << i);
+    } else {
+        storage.input.invert &= ~(1 << i);
+    }
+}
+
+static const BoolCallbacks inputInvertCbk = {
+    { boolGenericFunc, boolGenericText, }, inputInvertRead, inputInvertWrite,
+};
+
+
 // specialized item handlers
 
 static bool saveStorageFunc(const MenuItem* item, char data)
@@ -395,20 +418,20 @@ static const MenuItem rootList[] = {
         {}}},
     { "Wejścia/Wyjścia", &menuCbk, (const MenuItem[]){
         { "Przypisz wyjścia", &menuCbk, (const MenuItem[]){
-            { "paliwo", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[0], 16 }}},
-            { "piec", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[1], 16 }}},
-            { "elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[2], 16 }}},
-            { "pompa_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[3], 16 }}},
-            { "zaw_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[4], 16 }}},
-            { "zaw_powr_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[5], 16 }}},
-            { "zaw_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[6], 16 }}},
-            { "zaw_podl1_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[7], 16 }}},
-            { "pompa_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[8], 16 }}},
-            { "zaw_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[9], 16 }}},
-            { "zaw_podl2_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[10], 16 }}},
-            { "pompa_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[11], 16 }}},
-            { "pompa_cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[12], 16 }}},
-            { "buzzer", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[13], 16 }}},
+            { "paliwo", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[0], 15 }}},
+            { "piec", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[1], 15 }}},
+            { "elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[2], 15 }}},
+            { "pompa_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[3], 15 }}},
+            { "zaw_powr", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[4], 15 }}},
+            { "zaw_powr_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[5], 15 }}},
+            { "zaw_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[6], 15 }}},
+            { "zaw_podl1_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[7], 15 }}},
+            { "pompa_podl1", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[8], 15 }}},
+            { "zaw_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[9], 15 }}},
+            { "zaw_podl2_plus", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[10], 15 }}},
+            { "pompa_podl2", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[11], 15 }}},
+            { "pompa_cwu", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[12], 15 }}},
+            { "buzzer", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.relay.map[13], 15 }}},
             {}}},
         { "Odwróć wyjścia", &menuCbk, (const MenuItem[]){
             { "paliwo", &relayInvertCbk.base, (void*)0 },
@@ -427,6 +450,14 @@ static const MenuItem rootList[] = {
             { "brzeczyk", &relayInvertCbk.base, (void*)13 },
             {}}},
         { "Przypisz wejścia", &menuCbk, (const MenuItem[]){
+            { "Nagrzaj pomieszczenia", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.input.map[0], 2 }}},
+            { "Pellet podawany", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.input.map[1], 2 }}},
+            {}}},
+        { "Odwróć wejścia", &menuCbk, (const MenuItem[]){
+            { "Nagrzaj pomieszczenia", &inputInvertCbk.base, (void*)0 },
+            { "Pellet podawany", &inputInvertCbk.base, (void*)1 },
+            {}}},
+        { "Wejścia analogowe", &menuCbk, (const MenuItem[]){
             { "piec_pelet", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[0], 8 }}},
             { "piec_powrot", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[1], 8 }}},
             { "piec_elek", &intCbk<uint8_t>.base, (const IntItemInfo<uint8_t>[]) {{ &storage.temp.map[2], 8 }}},

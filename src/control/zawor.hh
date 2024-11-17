@@ -68,7 +68,7 @@ public:
     Zawor(Storage& storage, Relay::Index relay_on, Relay::Index relay_plus);
     void reset(int new_direction, bool full);
     bool ready();
-    void force(int new_direction);
+    void force(int new_direction); // is it needed?
     void signal(int value);
     void update();
     bool isFullyOpen();

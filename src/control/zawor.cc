@@ -48,7 +48,7 @@ void Zawor::update()
     if (signal_adjusted > 200) {
         signal_adjusted = 200;
     } else if (signal_adjusted < -200) {
-        signal_adjusted = 200;
+        signal_adjusted = -200;
     }
 
     // Update position based on signal.
@@ -266,8 +266,8 @@ void Zawor::set_relays(int new_direction)
     }
 }
 
-Zawor Zawor::powrotu(::storage.zaw_powrotu, Relay::ZAW_POWR, Relay::ZAW_POWR_PLUS);
-Zawor Zawor::podl1(::storage.zaw_podl1, Relay::ZAW_PODL1, Relay::ZAW_PODL1_PLUS);
-Zawor Zawor::podl2(::storage.zaw_podl2, Relay::ZAW_PODL2, Relay::ZAW_PODL2_PLUS);
+Zawor Zawor::powrotu(GLOBAL::storage.zaw_powrotu, Relay::ZAW_POWR, Relay::ZAW_POWR_PLUS);
+Zawor Zawor::podl1(GLOBAL::storage.zaw_podl1, Relay::ZAW_PODL1, Relay::ZAW_PODL1_PLUS);
+Zawor Zawor::podl2(GLOBAL::storage.zaw_podl2, Relay::ZAW_PODL2, Relay::ZAW_PODL2_PLUS);
 Zawor* Zawor::podl[2] = { &podl1, &podl2 };
 

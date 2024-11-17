@@ -1,0 +1,30 @@
+{
+    "configurations": [
+        {
+            "name": "Debug unit tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/test/unit",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build unit tests",
+            "miDebuggerPath": "/usr/bin/gdb"
+        }
+    ]
+}

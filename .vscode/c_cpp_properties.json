@@ -4,7 +4,10 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/**",
-                "${workspaceFolder}/build/include"
+                "${workspaceFolder}/build/include",
+                "${workspaceFolder}/src/control",
+                "${workspaceFolder}/test/unit/gtest/googletest/include",
+                "${workspaceFolder}/test/unit/gtest/googlemock/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

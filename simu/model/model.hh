@@ -292,9 +292,9 @@ struct State {
             Twejspc = Tspz;
         }
 
-        Tpodl1 = Z1 * Tspc + (1.0_f - Z1) * Twyj1;
+        Tpodl1 = P1 > 0.00001_f ? Z1 * Tspc + (1.0_f - Z1) * Twyj1 : 20.0_f;
 
-        Tpodl2 = Z2 * Tspc + (1.0_f - Z2) * Twyj2;
+        Tpodl2 = P1 > 0.00001_f ? Z2 * Tspc + (1.0_f - Z2) * Twyj2 : 20.0_f;
 
         if (P1 * Z1 + P2 * Z2 + P3 > 0.0_f) {
             Twejspz = (P1 * Z1 * Twyj1 + P2 * Z2 * Twyj2 + P3 * Twyj3) / (P1 * Z1 + P2 * Z2 + P3);

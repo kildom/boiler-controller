@@ -7,6 +7,10 @@
 #include <stdlib.h>
 #include "controlInterface.hh"
 
+#ifndef GLOBAL
+#define GLOBAL
+#endif
+
 constexpr int64_t operator ""_ms(unsigned long long x) { return x; };
 constexpr int64_t operator ""_sec(unsigned long long x) { return x * 1000uLL; };
 constexpr int64_t operator ""_min(unsigned long long x) { return x * 60uLL * 1000uLL; };

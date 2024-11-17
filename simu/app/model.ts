@@ -1,7 +1,8 @@
 import { assert, bufferEqual, concatenateBuffers, fatal, SerialInterface, wait } from "./simu-common";
 import { bitmap, decode, encode, setMode, sizes, State } from "./model-struct";
 
-const RESPONSE_TIMEOUT = 2000;
+//const RESPONSE_TIMEOUT = 2000;
+const RESPONSE_TIMEOUT = 1000 * 60 * 60 * 24;
 
 enum CmdType {
     TYPE_DIAG = 1 << 5,

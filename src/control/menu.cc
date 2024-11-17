@@ -291,8 +291,9 @@ static const IntCallbacks<T> tempCbk = {
     { intGenericFunc<T>, intGenericText<T> }, intRead<T>, intWrite<T>, IntCallbacks<T>::TEMP,
 };
 
-static const IntCallbacks<int> timeCbk = {
-    { intGenericFunc<int>, intGenericText<int> }, intRead<int>, intWrite<int>, IntCallbacks<int>::TIME,
+template<typename T>
+static const IntCallbacks<T> timeCbk = {
+    { intGenericFunc<T>, intGenericText<T> }, intRead<T>, intWrite<T>, IntCallbacks<T>::TIME,
 };
 
 

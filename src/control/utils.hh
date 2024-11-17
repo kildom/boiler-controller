@@ -81,7 +81,7 @@ public:
 };
 
 class DelayOffCondition {
-/* ▁▁▁▁▇▁▇▁▁▁▁▇▇▇▇▇▇▇▇▁▁▁  input
+/* ▁▁▁▁▇▁▇▁▁▁▁▇▁▁▇▇▇▇▇▁▁▁  input
  *    ▕ -T- ▏▕ -T- ▏
  * ▁▁▁▁▇▇▇▇▇▁▁▇▇▇▇▇▇▇▇▁▁▁  output
  */

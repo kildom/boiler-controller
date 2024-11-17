@@ -5,6 +5,7 @@
 #include "podl.hh"
 #include "utils.hh"
 #include "statesElek.hh"
+#include "statesPellet.hh"
 
 
 static StateFunction currentState = NULL;
@@ -106,7 +107,7 @@ static void stateGlobalIdle(Stage stage)
 enter:
 update:
     if (selectedPellet()) {
-        //setState(statePiecIdle);
+        setState(statePellet);
     } else if (selectedElek()) {
         setState(stateElek);
     }

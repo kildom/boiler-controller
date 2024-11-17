@@ -77,6 +77,7 @@ static void checkFaults()
 {
     static DelayOnCondition cond;
     
+    // TODO: Czy tu nie trzeba też sprawdzić, czy kocioł jest rzeczywiście włączony
     if (cond.get(Temp::piecPelet() < storage.zaw_powrotu.temp, storage.pelletMaxCzasPostoju)) {
         ERR("Kocioł na pellet ostygł i nie nagrzewa się.");
         emergencyDisable.pellet = true; // TODO: set fault
@@ -139,7 +140,7 @@ static void controlPodl(bool ochronaPowrotu)
     static DelayOffCondition delayOffPowr;
     bool powrCritical = delayOffPowr.get(tempPowr < storage.zaw_powrotu.critical, storage.powrCriticalOffTime);
 
-    Podl::podl1.pompa(!ochronaPowrotu || !powrCritical);
+    Podl::podl1.pompa(!ochronaPowrotu || !powrCritical); // TODO: Czy zawory nadal są sterowane, jeżeli tak, to ponownym włączeniu pomp może wystąpić zbyt duża temeratura podł.
     Podl::podl2.pompa(!ochronaPowrotu || !powrCritical);
 
     checkFaults();

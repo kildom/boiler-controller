@@ -7,7 +7,7 @@ const DIR = path.dirname(process.argv[1]);
 
 const inputs = {
     time: (output: string[], struct: StructItem, indent: string) => {
-        output.push(`${indent}{ "${struct.comment}", &timeCbk.base, (const IntItemInfo<${struct.type}>[]) {{ &storage.${struct.fullName}, ${struct.max}, ${struct.min} }}}, \\`);
+        output.push(`${indent}{ "${struct.comment}", &timeCbk<${struct.type}>.base, (const IntItemInfo<${struct.type}>[]) {{ &storage.${struct.fullName}, ${struct.max}, ${struct.min} }}}, \\`);
     },
     int: (output: string[], struct: StructItem, indent: string) => {
         output.push(`${indent}{ "${struct.comment}", &intCbk<${struct.type}>.base, (const IntItemInfo<${struct.type}>[]) {{ &storage.${struct.fullName}, ${struct.max}, ${struct.min} }}}, \\`);

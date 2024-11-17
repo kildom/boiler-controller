@@ -27,7 +27,7 @@ public:
 
     struct Storage {
         uint8_t map[OUTPUTS_COUNT];
-        uint32_t invert; // low level indexing (without mapping)
+        uint32_t invert; // high level indexing (with mapping)
     };
 
     static uint32_t state; // low level state (without inverting or mapping)

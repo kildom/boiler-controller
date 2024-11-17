@@ -272,11 +272,8 @@ uint32_t analog_input(int index)
         case 1: x = modelState.Tpowr; break;
         case 2: x = modelState.Tele; break;
         case 3: x = modelState.Tpodl1; break;
-        case 4: x = modelState.Twyj1; break;
-        case 5: x = modelState.Tpodl2; break;
-        case 6: x = modelState.Twyj2; break;
-        case 7: x = modelState.Tzas; break;
-        case 8: x = -50; break;
+        case 4: x = modelState.Tpodl2; break;
+        case 5: x = modelState.Tzas; break;
         default: x = 20; break; // TODO: ASSERT
     }
     //fptype raw = -0.2655244_f * x * x + 139.607_f * x + 34124.1915_f; // KTY81/210 + 1.5K resistor with 16-bit ADC

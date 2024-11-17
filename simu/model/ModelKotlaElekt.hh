@@ -36,7 +36,7 @@ struct ModelKotlaElekt {
 
     void step(fptype time) {
         stateTime += time;
-        T = Tin;
+        T = Rpom ? Tin : 20.0_f;
         switch (state)
         {
         case OFF:

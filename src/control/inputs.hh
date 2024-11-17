@@ -10,16 +10,18 @@ public:
     enum Index {
         HEAT_ROOM = 0,
         PELLET_PODAWANY = 1,
-        INPUTS_COUNT = 2,
+        POMPA_PELLET = 2,
+        INPUTS_COUNT = 3,
     };
 
     struct Storage {
         uint8_t map[INPUTS_COUNT];
-        uint32_t invert; // low level indexing (without mapping)
+        uint32_t invert; // high level indexing (with mapping)
     };
 
-    static inline int heatRoom() { return get(HEAT_ROOM); }
-    static inline int pelletPodawany() { return get(PELLET_PODAWANY); }
+    static inline bool heatRoom() { return get(HEAT_ROOM); }
+    static inline bool pelletPodawany() { return get(PELLET_PODAWANY); }
+    static inline bool pompaPellet() { return get(POMPA_PELLET); }
 
     static bool get(Index index);
 };

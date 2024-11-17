@@ -7,6 +7,7 @@
 #include "ModelZaworu.hh"
 #include "ModelKotlaElekt.hh"
 #include "ModelZasobnika.hh"
+#include "ModelKotlaNaPellet.hh"
 
 
 struct State {
@@ -81,6 +82,7 @@ struct State {
     // Wejścia
     bool   IN0;         // in    Input 0 - ster. pokojowy
     bool   IN1;         // in    Input 1 - podajnik pelletu
+    bool   IN2;         // in    Input 2 - pompka pieca na pellet
 
     // BEGIN PARAMS
 
@@ -96,7 +98,14 @@ struct State {
     fptype OpenTime;    // param Czas otwarcia zaworu
 
     // Kocioł na pellet
+    fptype MocPel;      // param Max. różnica temperatury przy przepływie "1"
     fptype P0v;         // param Przepływ pompki pieca, gdy pracuje
+    fptype Tzadpel;     // param Temeratura zadana pieca na pellet
+    fptype Tpompel;     // param Temeratura załanczania pompy pieca na pellet
+    fptype CzasStartPel;// param Czas startu pieca na pellet
+    fptype CzasStopPel; // param Czas zatrzymania pieca na pellet
+    fptype CzasPrzejPel;// param Czas przejścia wody przez cały piec na pellet
+    fptype UtrataPel;   // param Utrata ciepła (°C/s)/°C
 
     // Kocioł elektryczny
     fptype Tzadele;      // param Temperatura zadana kotła elektrycznego
@@ -140,6 +149,7 @@ struct State {
     ModelZasobnika zas;
     ModelZasobnika podl1Zas;
     ModelZasobnika podl2Zas;
+    ModelKotlaNaPellet pellet;
 
     State() :
         modZ0(Z0, Z0dir, R4, R5, OpenTime),
@@ -148,7 +158,8 @@ struct State {
         elekt(Tele, Tzadele, P4, Tspz, R2, Rele, EleCzasStart, EleCzasStop, EleMoc),
         zas(Tzas, Tspc, P3, Twyj3, ZasA, ZasK, ZasTwdelta, ZasTwmin),
         podl1Zas(Twyl1, Tpodl1, P1, Twyj1, PodlA, PodlK, Tdelta1, Tdom),
-        podl2Zas(Twyl2, Tpodl2, P2, Twyj2, PodlA, PodlK, Tdelta2, Tdom)
+        podl2Zas(Twyl2, Tpodl2, P2, Twyj2, PodlA, PodlK, Tdelta2, Tdom),
+        pellet(Tpiec, Tzadpel, P0, Tpowr, R1, R0, IN2, IN1, Tpompel, CzasStartPel, CzasStopPel, MocPel, CzasPrzejPel, UtrataPel)
     {
 
         // Parametry symulacji
@@ -166,9 +177,16 @@ struct State {
         Tpowr = 50;       // calc  Temperatura powrotu
         Tpiec = 70;       // mod   Temperatura wyjściowa pieca
         P0 = 0;          // calc  Aktualny przepływ pompki pieca
-        P0v = 1;         // param Przepływ pompki pieca, gdy pracuje
         Z0 = 0.4_f;        // mod   Zawór powrotu pieca (0 - niska temp. powrotu, 1 - wysoka temp. powrotu)
         Z0dir = 0;       // mod   Aktualny kierunek zaworu powrotu pieca
+        MocPel = 10;      // param Max. różnica temperatury przy przepływie "1"
+        P0v = 1;         // param Przepływ pompki pieca, gdy pracuje
+        Tzadpel = 70;     // param Temeratura zadana pieca na pellet
+        Tpompel = 50;     // param Temeratura załanczania pompy pieca na pellet
+        CzasStartPel = 10 * 60;// param Czas startu pieca na pellet
+        CzasStopPel = 15 * 60; // param Czas zatrzymania pieca na pellet
+        CzasPrzejPel = 5 * 60;// param Czas przejścia wody przez cały piec na pellet
+        UtrataPel = 0.4_f / 60.0_f / 60.0_f;   // param Utrata ciepła (°C/s)/°C
 
         // Kocioł elektryczny
         Tele = 36;         // mod   Temperatura wyjścia kotła elektrycznego
@@ -247,6 +265,7 @@ struct State {
         // Wejścia
         IN0 = 0;         // in    Input 0 - ster. pokojowy
         IN1 = 0;         // in    Input 1 - podajnik pelletu
+        IN2 = 0;         // in    Input 2 - pompka pieca na pellet
     }
 
     void step(fptype time)
@@ -264,6 +283,7 @@ struct State {
         zas.step(time);
         podl1Zas.step(time);
         podl2Zas.step(time);
+        pellet.step(time);
 
         Tpowr = (1.0_f - Z0) * Tspz + Z0 * Tpiec;
         if (P0 * (1.0_f - Z0) + P4 > 0.0_f) {

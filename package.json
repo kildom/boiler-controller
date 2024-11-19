@@ -8,7 +8,8 @@
   "scripts": {
     "simu-server": "npx tsx scripts/build-simu-app.ts s",
     "simu-watch": "npx tsx scripts/simu-watch.ts",
-    "simu-run": "concurrently -c blue,magenta npm:simu-server npm:simu-watch"
+    "simu-run": "concurrently -c blue,magenta npm:simu-server npm:simu-watch",
+    "unit-tests": "make -j8 -C test/unit run"
   },
   "author": "",
   "license": "ISC",

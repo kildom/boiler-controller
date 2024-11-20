@@ -225,9 +225,9 @@ struct State {
         Tdelta2 = 0;     // calc  Jak szybko upływa temperatura z wylewki 1 [°C/s].
 
         // Podłogówka - wspólne
-        PodlA = 1;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
-        PodlK = 0.0004_f;   // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
-        Tpoddelta = 0.00007_f;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
+        PodlA = 2;        // param Jak szybko spada temperatura po długości wężownicy przy przepływie P=1 (jednostki nieznane)
+        PodlK = 0.001_f;   // param Jak szybko wężownica przekazuje energię do wylewki (jednostki nieznane)
+        Tpoddelta = 0.0001_f;    // param Jak szybko upływa temperatura z wylewki na 1 °C różnicy [°C/s / °C]
 
         // Dom
         Tdom = 23;         // calc  Temperatura domu

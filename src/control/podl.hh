@@ -54,6 +54,7 @@ public:
     void reset(int dir, bool full) {
         if (podlState != DISABLED) {
             Zawor::podl[index]->reset(dir, full);
+            Zawor::podl[index]->signal(0);
         }
         zaworState = dir > 0 ? OPEN : CLOSED;
     }

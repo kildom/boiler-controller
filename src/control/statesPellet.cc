@@ -63,7 +63,7 @@ int calcProportional(int temp, Zawor& zaw) {
     int diff = zaw.storage.temp - temp;
     int hist = zaw.storage.hist;
     int proportionalDiff = zaw.storage.proportionalDiff;
-    int sign = diff >> (sizeof(int) * 8 - 1);
+    int sign = diff < 0 ? -1 : 1;
     diff = std::max(0, diff * sign - hist) * 100 / proportionalDiff;
     return diff * sign;
 }

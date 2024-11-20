@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <iostream>
 
-using ::testing::Sequence;
 using ::testing::_;
 
 namespace zaworTests {
@@ -53,12 +52,6 @@ uint32_t analog_input(int index); // Raw 16-bit value of analog input, convertin
 uint32_t get_time()
 {
     return time;
-}
-
-void timeout(uint32_t t)
-{
-    timeoutSet = true;
-    timeoutValue = t;
 }
 
 void store_read(int slot, uint8_t* buffer, int size)
@@ -118,7 +111,15 @@ void setNextTime(uint32_t next)
     }
 }
 
+void timeout(uint32_t t)
+{
+    printf("timeout in %d\n", t - time);
+    setNextTime(t);
+}
+
+
 struct MockFunctions {
+    bool outputPeriodEnable;
     MOCK_METHOD(void, outputPeriod, (int dir, uint32_t time), ());
 };
 
@@ -133,8 +134,9 @@ void updateLoop(const T& updateFunc) {
         Time::update_start();
         working = updateFunc();
         if (direction != oldDirection && time > directionStart) {
-            printf("%d for %d\n", oldDirection, time - directionStart);
-            mf->outputPeriod(oldDirection, time - directionStart);
+            printf("######## %d for %d\n", oldDirection, time - directionStart);
+            if (mf->outputPeriodEnable)
+                mf->outputPeriod(oldDirection, time - directionStart);
             directionStart = time;
         }
         uint32_t next = getNextTime();
@@ -149,8 +151,9 @@ void updateLoop(const T& updateFunc) {
         position += direction * delta;
     } while (working);
     if (time > directionStart) {
-        printf("%d for %d\n", direction, time - directionStart);
-        mf->outputPeriod(direction, time - directionStart);
+        printf("######## %d for %d\n", direction, time - directionStart);
+        if (mf->outputPeriodEnable)
+                mf->outputPeriod(direction, time - directionStart);
     }
 }
 
@@ -190,68 +193,248 @@ TEST_P(ZaworTestWithDir, ResetFull) {
     testing::Mock::AllowLeak(mf);
     Zawor::Storage storage(storageProto);
     Zawor zaw(storage, Relay::Index::ZAW_PODL1, Relay::Index::ZAW_PODL1_PLUS);
-    Sequence seq;
+    testing::Sequence seq;
     int dir = GetParam();
+    mf->outputPeriodEnable = true;
 
-    if (1){
-        uint32_t end = time + 2 * 120_sec;
-        EXPECT_CALL(*mf, outputPeriod(dir, 135_sec)).Times(1).InSequence(seq);
-        EXPECT_CALL(*mf, outputPeriod(0, 300_ms)).Times(1).InSequence(seq);
-        EXPECT_CALL(*mf, outputPeriod(-dir, 4_sec)).Times(1).InSequence(seq);
-        EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
-        zaw.reset(dir, true);
-        updateLoop([&]() {
-            zaw.update();
-            return time < end;
-        });
-    }
-    if (0) {
-        uint32_t end = time + 10_sec;
-        // EXPECT_CALL(*mf, outputPeriod(-dir, 10_sec)).Times(1).InSequence(seq);
-        zaw.reset(-dir, true);
-        updateLoop([&]() {
-            zaw.update();
-            setNextTime(time + 1);
-            return time + 1 < end;
-        });
-        end = time + 2 * 120_sec;
-        // EXPECT_CALL(*mf, outputPeriod(0, 300_ms)).Times(1).InSequence(seq);
-        // EXPECT_CALL(*mf, outputPeriod(dir, 135_sec)).Times(1).InSequence(seq);
-        // EXPECT_CALL(*mf, outputPeriod(0, 300_ms)).Times(1).InSequence(seq);
-        // EXPECT_CALL(*mf, outputPeriod(-dir, 4_sec)).Times(1).InSequence(seq);
-        // EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
-        zaw.reset(dir, true);
-        updateLoop([&]() {
-            zaw.update();
-            return time < end;
-        });
-    }
+    // Prosty reset
+    uint32_t end = time + 2 * 120_sec;
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(testing::AtMost(1)).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, 135_sec)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, 500_ms)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, 4_sec)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.reset(dir, true);
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
 
+    // Przerwany reset przez reset w drugą stronę
+    mf->outputPeriodEnable = false;
+    zaw.reset(-dir, true);
+    end = time + 10_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+    mf->outputPeriodEnable = true;
+    EXPECT_CALL(*mf, outputPeriod(0, 500_ms)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, 135_sec)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, 500_ms)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, 4_sec)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.reset(dir, true);
+    end = time + 2 * 120_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+
+    testing::Mock::VerifyAndClearExpectations(mf);
+    testing::Mock::AllowLeak(mf);
+}
+
+template <typename T>
+auto allowError(T x, float percentage) {
+    T diff = (x * (T)percentage) / (T)100;
+    return testing::AllOf(testing::Ge(x - diff), testing::Le(x + diff));
 }
 
 TEST_P(ZaworTestWithDir, FullSignal) {
-    testing::Mock::AllowLeak(mf);
     Zawor::Storage storage(storageProto);
     Zawor zaw(storage, Relay::Index::ZAW_PODL1, Relay::Index::ZAW_PODL1_PLUS);
-    Sequence seq;
+    testing::Sequence seq;
     int dir = GetParam();
     uint32_t end;
+    mf->outputPeriodEnable = false;
 
-    EXPECT_CALL(*mf, outputPeriod(_, _)).Times(4);
     zaw.reset(-dir, true);
-    end = time + 300_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return !zaw.ready();
+    });
+
+    mf->outputPeriodEnable = true;
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(15000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(2000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(15000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(2000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(15000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(2000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(dir * 256);
+    end = time + 58_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+    
+    printf("-------\n");
+    EXPECT_CALL(*mf, outputPeriod(0, testing::AllOf(testing::Ge(15000), testing::Le(22500)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(2000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(15000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(2000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(15000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(2000, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(_, _)).Times(testing::AnyNumber()).InSequence(seq);
+    zaw.signal(-dir * 256);
+    end = time + 65_sec;
     updateLoop([&]() {
         zaw.update();
         return time < end;
     });
 
-    EXPECT_CALL(*mf, outputPeriod(_, _)).Times(testing::AnyNumber());
-    zaw.signal(dir * 256);
-    end = time + 80_sec;
+    testing::Mock::VerifyAndClearExpectations(mf);
+    testing::Mock::AllowLeak(mf);
+}
+
+TEST_P(ZaworTestWithDir, HalfSignal) {
+    Zawor::Storage storage(storageProto);
+    Zawor zaw(storage, Relay::Index::ZAW_PODL1, Relay::Index::ZAW_PODL1_PLUS);
+    testing::Sequence seq;
+    int dir = GetParam();
+    uint32_t end;
+    mf->outputPeriodEnable = false;
+
+    zaw.reset(-dir, true);
+    updateLoop([&]() {
+        zaw.update();
+        return !zaw.ready();
+    });
+
+    printf("-------\n");
+    mf->outputPeriodEnable = true;
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(32_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(2_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(32_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(2_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(32_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(2_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(dir * 128);
+    end = time + 105_sec;
     updateLoop([&]() {
         zaw.update();
         return time < end;
     });
+    
+    printf("-------\n");
+    EXPECT_CALL(*mf, outputPeriod(0, testing::AllOf(testing::Ge(15_sec), testing::Le(33_sec)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, testing::AllOf(testing::Ge(1_sec), testing::Le(2_sec)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(32_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(2_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(32_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(2_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(-dir * 128);
+    end = time + 115_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+
+    testing::Mock::VerifyAndClearExpectations(mf);
+    testing::Mock::AllowLeak(mf);
+}
+
+TEST_P(ZaworTestWithDir, QuatreSignal) {
+    Zawor::Storage storage(storageProto);
+    Zawor zaw(storage, Relay::Index::ZAW_PODL1, Relay::Index::ZAW_PODL1_PLUS);
+    testing::Sequence seq;
+    int dir = GetParam();
+    uint32_t end;
+    mf->outputPeriodEnable = false;
+
+    zaw.reset(-dir, true);
+    updateLoop([&]() {
+        zaw.update();
+        return !zaw.ready();
+    });
+
+    printf("-------\n");
+    mf->outputPeriodEnable = true;
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(33_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(33_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(33_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(dir * 64);
+    end = time + 105_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+    
+    printf("-------\n");
+    EXPECT_CALL(*mf, outputPeriod(0, testing::AllOf(testing::Ge(15_sec), testing::Le(40_sec)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, testing::AllOf(testing::Ge(900), testing::Le(1100)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(33_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(33_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(-dir * 64);
+    end = time + 200_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+
+    testing::Mock::VerifyAndClearExpectations(mf);
+    testing::Mock::AllowLeak(mf);
+}
+
+TEST_P(ZaworTestWithDir, SmallSignal) {
+    Zawor::Storage storage(storageProto);
+    Zawor zaw(storage, Relay::Index::ZAW_PODL1, Relay::Index::ZAW_PODL1_PLUS);
+    testing::Sequence seq;
+    int dir = GetParam();
+    uint32_t end;
+    mf->outputPeriodEnable = false;
+
+    zaw.reset(-dir, true);
+    updateLoop([&]() {
+        zaw.update();
+        return !zaw.ready();
+    });
+
+    printf("-------\n");
+    mf->outputPeriodEnable = true;
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(67_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(67_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(67_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(dir * 32);
+    end = time + 224_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+    
+    printf("-------\n");
+    EXPECT_CALL(*mf, outputPeriod(0, testing::AllOf(testing::Ge(15_sec), testing::Le(100_sec)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, testing::AllOf(testing::Ge(900), testing::Le(1100)))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(67_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, allowError(67_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(-dir, allowError(1_sec, 1))).Times(1).InSequence(seq);
+    EXPECT_CALL(*mf, outputPeriod(0, _)).Times(1).InSequence(seq);
+    zaw.signal(-dir * 32);
+    end = time + 400_sec;
+    updateLoop([&]() {
+        zaw.update();
+        return time < end;
+    });
+
+    testing::Mock::VerifyAndClearExpectations(mf);
+    testing::Mock::AllowLeak(mf);
 }
 
 INSTANTIATE_TEST_SUITE_P(

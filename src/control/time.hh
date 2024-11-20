@@ -22,7 +22,7 @@ class Timer: private DequeItem {
 private:
     uint64_t time_absolute;
 public:
-    Timer(uint64_t initial_time = Time::NEVER);
+    Timer(uint64_t initial_time = 0);
     void set(int time_relative);
     void clear();
     bool ready();

@@ -71,7 +71,7 @@ void Timer::set(int time_relative)
 
 void Timer::clear()
 {
-    time_absolute = Time::NEVER;
+    time_absolute = 0;
     timers.remove(this);
 }
 

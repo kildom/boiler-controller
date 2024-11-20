@@ -5,7 +5,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceRoot}/build/test/unit",
-            "args": [],
+            "args": ["--gtest_filter=ZaworTestWithDirSuite/ZaworTestWithDir.FullSignal/1"],
             "stopAtEntry": false,
             "cwd": "${workspaceRoot}",
             "environment": [],

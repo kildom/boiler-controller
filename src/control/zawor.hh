@@ -17,9 +17,9 @@ public:
         int czas_min_otwarcia;
         // Czas przerwy, time, default: 15_sec, range: 1_sec..10_min
         int czas_przerwy;
-        // Czas pracy, time, default: 2_sec, range: 1_sec..10_min
+        // Czas pracy, time, default: 2_sec, range: 1_sec..16_sec
         int czas_pracy_max;
-        // Min. dopuszczalny czas pracy., time, default: 1_sec, range: 1_sec..10_min
+        // Min. dopuszczalny czas pracy., time, default: 1_sec, range: 1_sec..16_sec
         int czas_pracy_min;
         // Korekta czasu działania zaw., time, default: 0_sec, range: -1_sec..+1_sec
         int16_t korekta;
@@ -37,40 +37,51 @@ public:
     Storage& storage;
 private:
 
-    static const int RESET = 1;
-    static const int FORCE = 2;
-    static const int FLAG_PLUS = 1 << 8;
-    static const int FLAG_MINUS = 0 << 8;
-    static const int FLAG_FULL = 1 << 9;
+    enum Event {
+        INITIAL = 1,
+        NORMAL = 2,
+        RESET = 3,
+        RESET_FULL = 4,
+        FORCE_START = 5,
+        FORCE_STOP = 6,
+        FLAG_PLUS = 1 << 8,
+        FLAG_MINUS = 1 << 9,
+    };
 
-    Relay::Index relay_on;
-    Relay::Index relay_plus;
+    Relay::Index relayOn;
+    Relay::Index relayPlus;
 
     /// Aktualna wartość sygnału sterującego w zakresie -256...+256 (wyższa wartość dopuszczalna dla szybkiego sterowania).
-    int current_signal;
+    int signalValue;
     /// Pozycja zaworu na podstawie sygnału (jednostka: 256 * czas).
-    int signal_pos;
+    int signalPos;
     /// Rzeczywista pozycja zaworu (jednostka: czas).
-    int real_pos; 
+    int realPos;
     /// Czas pracy zworu od ostatniego resetu.
     int totalWorkTime;
-    /// Aktualne zdarzenie, reset lub wymuszona praca (0 dla normalnego sterowania).
-    int event;
 
-    int direction; 
-    void* resumeLabel;
-    uint64_t lastWorkTime;
-    int delayTime;
+    /// Główny timer do sterowania stanem
     Timer timer;
+    /// Timer odliczający czas od ostatniego włączenie/wyłączenia siłownika
+    Timer switchTimer;
+    /// Aktualny kierunek działania (stan przkaźników)
+    int realDirection;
+    /// Spodziewany kierunek działana, może być inny niż realDirection, jeżeli czekamy na przełączenie przekaźników
+    int expectedDirection;
+
+    /// Zminne do przechowywania stanu korutyny
+    void* resumeLabel;
+    int activeEvent;
+    int oldEvent;
 
 public:
 
-    Zawor(Storage& storage, Relay::Index relay_on, Relay::Index relay_plus);
-    void reset(int new_direction, bool full);
+    Zawor(Storage& storage, Relay::Index relayOn, Relay::Index relayPlus);
+    void reset(int newDirection, bool full);
     bool ready();
-    void force(int new_direction);
+    void force(int newDirection);
     void signal(int value);
-    void update();
+    void update() { handler(0); };
     bool isFullyOpen();
 
     static Zawor powrotu;
@@ -79,8 +90,13 @@ public:
     static Zawor* podl[2];
 
 private:
-
-    void set_relays(int new_direction);
+    void handler(int event);
+    void sendEvent(int event) { handler(event); }
+    bool setDirection(int direction);
+    void setRealDirection();
+    int getRequestedDir();
+    bool posUpdateStop(int direction);
+    bool longWorkSyncReq(int direction);
 
 };
 

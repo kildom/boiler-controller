@@ -10,260 +10,248 @@
 
 
 static const int ZAW_RELAY_OFF_TIMEOUT = 300;
-static const int ZAW_RESET_WORK_TIME_MUL = 8;
+static const int ZAW_RESET_WORK_TIME_MUL = 10;
+
+static const uint32_t ZAW_PRZERWA_PRZEK = 500_ms;
+static const uint32_t RESET_OVERDRIVE = 4_sec;
 
 
-Zawor::Zawor(Storage &storage, Relay::Index relay_on, Relay::Index relay_plus):
+Zawor::Zawor(Storage &storage, Relay::Index relayOn, Relay::Index relayPlus):
     storage(storage),
-    relay_on(relay_on),
-    relay_plus(relay_plus),
-    current_signal(0),
-    signal_pos(storage.czas_min_otwarcia),
-    real_pos(storage.czas_min_otwarcia),
+    relayOn(relayOn),
+    relayPlus(relayPlus),
+    signalValue(0),
+    signalPos(256 * storage.czas_min_otwarcia),
+    realPos(storage.czas_min_otwarcia),
     totalWorkTime(0),
-    event(0),
-    direction(0),
-    resumeLabel(nullptr),
-    lastWorkTime(0),
-    delayTime(0)
+    activeEvent(INITIAL),
+    oldEvent(0),
+    resumeLabel(nullptr)
 {
-    DBG("%d: Construct, otw %d, min %d", relay_on, storage.czas_otwarcia, storage.czas_min_otwarcia);
 }
 
-void Zawor::update()
+void Zawor::handler(int event)
 {
-    int threshold = 0;
-    bool full = false;
-    bool tooLow = false;
-    bool tooHigh = false;
-    int timeout = 0;
-    int margin = 0;
-    uint64_t idleTime = 0;
+    int dirRequested;
 
-    
-    // Pomnóż sygnał przez maksymany stosunek pracy zaworu.
-    int signal_adjusted = current_signal * storage.czas_pracy_max / (storage.czas_przerwy + storage.czas_pracy_max);
-
-    // Sygnał nie może wymuszać pracy szybszej niż zawór da radę. Limit to 256, odejmując margines jest 200.
-    if (signal_adjusted > 200) {
-        signal_adjusted = 200;
-    } else if (signal_adjusted < -200) {
-        signal_adjusted = -200;
+    if (event) {
+        if (oldEvent) {
+            auto tmp = oldEvent;
+            oldEvent = 0;
+            sendEvent(tmp);
+        }
+        switch (event & 0xFF) {
+            case INITIAL:
+                resumeLabel = &&initial;
+                break;
+            case NORMAL:
+                resumeLabel = &&normal;
+                break;
+            case RESET:
+                resumeLabel = &&reset;
+                break;
+            case RESET_FULL:
+                resumeLabel = &&resetFull;
+                break;
+            case FORCE_START:
+                oldEvent = activeEvent;
+                resumeLabel = &&force;
+                break;
+            case FORCE_STOP:
+                // Already done before switch
+                break;
+        }
+        activeEvent = event;
+        Time::schedule(0);
+        return;
     }
 
-    // Update position based on signal.
-    signal_pos += signal_adjusted * Time::delta;
 
-    // Normalizuj jednostki pozycji i limituj do zakresu roboczego.
-    int signal_pos_norm = (signal_pos + 128) / 256;
-    if (signal_pos_norm < storage.czas_min_otwarcia) {
-        signal_pos_norm = storage.czas_min_otwarcia;
-        signal_pos = 256 * signal_pos_norm;
-    } else if (signal_pos_norm > storage.czas_otwarcia - storage.czas_min_otwarcia) {
-        signal_pos_norm = storage.czas_otwarcia - storage.czas_min_otwarcia;
-        signal_pos = 256 * signal_pos_norm;
+    dirRequested = (activeEvent & FLAG_PLUS) ? +1 : -1;
+
+    int timeDelta = std::min(Time::delta, 255);
+    if (timeDelta < 1) {
+        Time::schedule(0);
+        return;
     }
 
-    // Wznów w miejscu ostatniego oczekiwania
-    if (resumeLabel != nullptr) {
+    if (signalValue != 0) {
+        signalPos += signalValue * storage.czas_pracy_max * timeDelta // +-512 * 16_sec * 255 < 2^31
+            / (storage.czas_przerwy + storage.czas_pracy_max);
+        if (signalPos < 256 * storage.czas_min_otwarcia) {
+            signalPos = 256 * storage.czas_min_otwarcia;
+        } else if (signalPos > 256 * (storage.czas_otwarcia - storage.czas_min_otwarcia)) {
+            signalPos = 256 * (storage.czas_otwarcia - storage.czas_min_otwarcia);
+        }
+    }
+
+    if (realDirection != 0) {
+        realPos += realDirection * timeDelta;
+        totalWorkTime += std::abs(realDirection) * timeDelta;
+    }
+
+    if (expectedDirection != realDirection && switchTimer.ready()) {
+        setRealDirection();
+    }
+
+    if (resumeLabel != NULL) {
         goto *resumeLabel;
     }
 
-    if (event == 0) { // Normale sterowanie
+initial:
+    activeEvent = INITIAL;
+    setDirection(0);
+    WAIT_UNTIL(false);
 
-        /* Oblicz próg aktywacji zaworu
-         *  [oś: threshold]
-         *  | 
-         *  |\
-         *  | \,    __ czas_pracy_max
-         *  |  \
-         *  |   \_____ czas_pracy_min
-         *  |
-         *  +------------------------> [oś: idleTime]
-         *  |<->| 2 * czas_przerwy
-         */
-        idleTime = Time::time - lastWorkTime;
-        if (idleTime >= 2 * storage.czas_przerwy) {
-            threshold = storage.czas_pracy_min;
-        } else {
-            threshold = 2 * storage.czas_pracy_max - storage.czas_pracy_min - (int)(((int64_t)storage.czas_pracy_max - (int64_t)storage.czas_pracy_min) * (int64_t)idleTime / (int64_t)storage.czas_przerwy);
+normal:
+    activeEvent = NORMAL;
+    setDirection(0);
+    while (true) {
+        WAIT_UNTIL((dirRequested = getRequestedDir()) != 0);  // Czekaj na zażądanie włączenia siłownika
+        activeEvent = NORMAL | (dirRequested < 0 ? FLAG_MINUS : FLAG_PLUS);
+        WAIT_UNTIL(setDirection(dirRequested));                 // Włącz siłownik
+        WAIT_FOR(storage.czas_pracy_min);                  // Pozostaw włączony przynajmniej na min. czas pracy
+        timer.set(storage.czas_pracy_max);
+        WAIT_UNTIL(posUpdateStop(dirRequested) || timer.ready());    // Pozostaw wł. aż minie max czas pracy lub nie trzeba już więcej updatować
+        if (longWorkSyncReq(dirRequested)) {
+            sendEvent(RESET | (dirRequested < 0 ? FLAG_MINUS : FLAG_PLUS));
+            return;
         }
-
-        // Jeżeli poza progiem, uruchom zawór
-        tooLow = real_pos < signal_pos_norm - threshold;
-        tooHigh = real_pos > signal_pos_norm + threshold;
-
-        if (tooLow || tooHigh) {
-        
-            direction = tooLow ? +1 : -1;
-
-            // Uruchom zawór na czas równy różnicy
-            set_relays(direction);
-            delayTime = direction * (signal_pos_norm - real_pos);
-            WAIT_FOR(delayTime - storage.korekta);
-            set_relays(0);
-
-            // Aktualizuj aktualną pozycję i całkowity czas pracy
-            real_pos += direction * (delayTime + timer.overtime());
-            totalWorkTime += delayTime;
-            lastWorkTime = Time::time;
-
-            // Czekaj na całkowite zatrzymanie
-            WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
-
-            // Jeżeli długi czas pracy bez resetu i znajdujemy się na granicy obszaru roboczego, resetuj pozycję zaworu.
-            if (totalWorkTime > ZAW_RESET_WORK_TIME_MUL * storage.czas_otwarcia) {
-                if (signal_pos_norm <= storage.czas_min_otwarcia) {
-                    event = RESET | FLAG_MINUS;
-                    Time::schedule(0);
-                } else if (signal_pos_norm >= storage.czas_otwarcia - storage.czas_min_otwarcia) {
-                    event = RESET | FLAG_PLUS;
-                    Time::schedule(0);
-                }
-            }
-        }
-
-    } else if ((event & 0xF) == RESET) { // Reset zaworu
-
-        /* TODO: If new reset event arrived:
-                  FULL
-            DIR NOW NEW
-             -   -   -   skip new event
-             -   -   F   convert new event to FULL and stop this reset allowing new event to be executed
-             -   F   -   skip new event
-             -   F   F   skip new event
-             !   -   -   do nothing, new event will be executed after this one
-             !   -   F   convert new event to FULL and stop this reset allowing new event to be executed
-             !   F   -   convert new event to FULL and stop this reset allowing new event to be executed
-             !   F   F   convert new event to FULL and stop this reset allowing new event to be executed
-
-        */
-
-        // Zapamiętaj parametry eventu i wyczyść event
-        direction = (event & FLAG_PLUS) ? +1 : -1;
-        full = (event & FLAG_FULL) != 0;
-        event = 0;
-
-        // Oblicz czas potrzebny do dojścia do granicy zaworu
-        margin = storage.czas_otwarcia / 16;
-        if (full) {
-            timeout = storage.czas_otwarcia + margin;
-        } else if (direction < 0) {
-            timeout = real_pos;
-        } else {
-            timeout = storage.czas_otwarcia - real_pos;
-        }
-        timeout += margin;
-
-        // Przejdź do brzegu zaworu
-        set_relays(direction);
-        WAIT_FOR(timeout);
-        set_relays(0);
-
-        // Czekaj na całkowite zatrzymanie
-        WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
-
-        // Ustaw zawór na minimalne otwarcie/zamknięcie
-        set_relays(-direction);
-        WAIT_FOR(storage.czas_min_otwarcia - storage.korekta);
-        set_relays(0);
-
-        // Ustaw zresetowane wartości
-        real_pos = storage.czas_min_otwarcia + timer.overtime();
-        if (direction > 0) {
-            real_pos = storage.czas_otwarcia - real_pos;
-        }
-        signal_pos = real_pos * 256;
-        totalWorkTime = 0;
-        current_signal = 0;
-
-        // Czekaj na całkowite zatrzymanie
-        WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
-    
-    } else if ((event & 0xF) == FORCE) { // Wymuszone działanie
-        
-        // Zapamiętaj kierunek i czas rozpoczęcia
-        direction = (event & FLAG_PLUS) ? +1 : -1;
-        lastWorkTime = Time::time;
-
-        // Uruchom zawór tak długo jak długo jest aktywny ten event.
-        set_relays(direction);
-        WAIT_UNTIL(event != (FORCE | (direction > 0 ? FLAG_PLUS : FLAG_MINUS)));
-        set_relays(0);
-
-        // Uaktualnij całkowity czas pracy i rzeczywistą pozycję.
-        totalWorkTime += Time::time - lastWorkTime;
-        real_pos += direction * (Time::time - lastWorkTime + storage.korekta);
-        if (real_pos >= storage.czas_otwarcia) {
-            real_pos = storage.czas_otwarcia;
-        } else if (real_pos <= 0) {
-            real_pos = 0;
-        }
-        
-        // Ustaw pozycję (sygnał) na taką samą jak rzeczywista z wyjątkiem minialnego otwarcia
-        signal_pos = real_pos;
-        if (signal_pos > storage.czas_otwarcia - storage.czas_min_otwarcia) {
-            signal_pos = storage.czas_otwarcia - storage.czas_min_otwarcia;
-        } else if (signal_pos < storage.czas_min_otwarcia) {
-            signal_pos = storage.czas_min_otwarcia;
-        }
-        signal_pos *= 256;
-
-        // Czekaj na całkowite zatrzymanie
-        WAIT_FOR(ZAW_RELAY_OFF_TIMEOUT);
+        setDirection(0);                                   // Wyłącz siłownik
+        // Wprowadź korektę sterowania (czas na rozruchu i/lub bezwładność siłownika)
+        realPos = std::min(std::max(realPos + dirRequested * storage.korekta, 0), storage.czas_otwarcia);
     }
 
-    // Normale wyjście z funkcji powoduje powrót do początku przy następnym wywołaniu.
-    resumeLabel = nullptr;
-}
-
-
-void Zawor::reset(int new_direction, bool full)
-{
-    // TODO: skip non-full reset if already in place
-    event = RESET | (new_direction > 0 ? FLAG_PLUS : FLAG_MINUS) | (full ? FLAG_FULL : 0);
-    current_signal = 0;
-    Time::schedule(0);
-}
-
-bool Zawor::ready()
-{
-    return event == 0 && resumeLabel == nullptr;
-}
-
-void Zawor::force(int new_direction)
-{
-    if (new_direction == 0) {
-        event = 0;
-    } else  {
-        event = FORCE | (new_direction > 0 ? FLAG_PLUS : FLAG_MINUS);
-        current_signal = 0;
-    }
-}
-
-void Zawor::signal(int value)
-{
-    current_signal = value;
-}
-
-bool Zawor::isFullyOpen()
-{
-    return ((signal_pos + 128) / 256 >= storage.czas_otwarcia - storage.czas_min_otwarcia);
-}
-
-void Zawor::set_relays(int new_direction)
-{
-    if (new_direction == 0) {
-        Relay::set(relay_on, false);
-        Relay::powerOff(relay_plus);
+resetFull:
+    WAIT_UNTIL(setDirection(dirRequested));
+    WAIT_FOR(storage.czas_otwarcia + std::max((int)RESET_OVERDRIVE, storage.czas_otwarcia / 8));
+    WAIT_UNTIL(setDirection(-dirRequested));// setDirection sprawdza ZAW_PRZERWA_PRZEK (przerwa nie jest wliczana do czasu pracy)
+    WAIT_FOR(storage.czas_min_otwarcia);
+    setDirection(0);
+    if (dirRequested < 0) {
+        realPos = storage.czas_min_otwarcia;
     } else {
-        if (new_direction > 0) {
-            Relay::set(relay_plus, true);
-        } else {
-            Relay::set(relay_plus, false);
-        }
-        Relay::set(relay_on, true);
+        realPos = storage.czas_otwarcia - storage.czas_min_otwarcia;
     }
+    signalPos = 256 * realPos;
+    signalValue = 0;
+    totalWorkTime = 0;
+    goto normal;
+
+reset:
+    WAIT_UNTIL(setDirection(dirRequested));
+    WAIT_FOR(RESET_OVERDRIVE + (dirRequested < 0 ? realPos : storage.czas_otwarcia - realPos));
+    WAIT_UNTIL(setDirection(-dirRequested));
+    WAIT_FOR(storage.czas_min_otwarcia);
+    setDirection(0);
+    if (dirRequested < 0) {
+        realPos = storage.czas_min_otwarcia;
+    } else {
+        realPos = storage.czas_otwarcia - storage.czas_min_otwarcia;
+    }
+    totalWorkTime = 0;
+    goto normal;
+
+force:
+    setDirection(dirRequested);
+    WAIT_UNTIL(false, {
+        signalPos = 256 * std::max(
+            std::min(realPos, (storage.czas_otwarcia - storage.czas_min_otwarcia)),
+            storage.czas_min_otwarcia);
+    });
+}
+
+int Zawor::getRequestedDir()
+{
+    if (signalValue == 0 || !switchTimer.ready()) return 0;
+
+    int lastSwitchTime = switchTimer.overtime();
+
+    int limit;
+    if (lastSwitchTime < 2 * storage.czas_przerwy + storage.czas_pracy_max) {
+        limit = storage.czas_pracy_max;
+    } else {
+        limit = storage.czas_pracy_min;
+    }
+
+    int predicted = signalPos + signalValue * (storage.czas_pracy_max * limit) / (storage.czas_pracy_max + storage.czas_przerwy);
+    int diff = predicted / 256 - realPos;
+    if (signalValue > 0 && diff > limit) return +1;
+    if (signalValue < 0 && diff < -limit) return -1;
+    return 0;
+}
+
+bool Zawor::posUpdateStop(int direction)
+{
+    if (direction == 0) return true;
+    int diff = signalPos - 256 * realPos;
+    if (direction < 0 && diff >= 0) return true;
+    if (direction > 0 && diff <= 0) return true;
+    Time::schedule((std::abs(diff) + 767) / 256);
+    return false;
+}
+
+bool Zawor::longWorkSyncReq(int direction)
+{
+    if (direction == 0 || totalWorkTime < ZAW_RESET_WORK_TIME_MUL * storage.czas_otwarcia) return false;
+    if (direction < 0 && signalPos == 256 * storage.czas_min_otwarcia) return true;
+    if (direction > 0 && signalPos == 256 * (storage.czas_otwarcia - storage.czas_min_otwarcia)) return true;
+    return false;
+}
+
+bool Zawor::setDirection(int direction)
+{
+    if (direction == expectedDirection)
+        return (direction == realDirection);
+    expectedDirection = direction;
+    if (!switchTimer.ready())
+        return (direction == realDirection);
+    if (direction != realDirection)
+        setRealDirection();
+    return (direction == realDirection);
+}
+
+void Zawor::setRealDirection()
+{
+    switchTimer.set(ZAW_PRZERWA_PRZEK);
+    if (realDirection * expectedDirection < 0 || expectedDirection == 0) { // stop also if signs are different
+        Relay::set(relayOn, false);
+        Relay::powerOff(relayPlus);
+        realDirection = 0;
+    } else {
+        if (expectedDirection > 0) {
+            Relay::set(relayPlus, true);
+            realDirection = +1;
+        } else {
+            Relay::set(relayPlus, false);
+            realDirection = -1;
+        }
+        Relay::set(relayOn, true);
+    }
+}
+
+void Zawor::reset(int newDirection, bool full) {
+    sendEvent((full ? RESET_FULL : RESET) | (newDirection < 0 ? FLAG_MINUS : FLAG_PLUS));
+}
+
+bool Zawor::ready() {
+    return (activeEvent & 0xFF) == NORMAL;
+}
+
+void Zawor::force(int newDirection) {
+    if (newDirection != 0) {
+        sendEvent(FORCE_START | (newDirection < 0 ? FLAG_MINUS : FLAG_PLUS));
+    } else {
+        sendEvent(FORCE_STOP);
+    }
+}
+
+void Zawor::signal(int value) {
+    signalValue = std::min(std::max(value, -512), +512);
+}
+
+bool Zawor::isFullyOpen() {
+    return ready() && (signalPos == 256 * (storage.czas_otwarcia - storage.czas_min_otwarcia));
 }
 
 Zawor Zawor::powrotu(GLOBAL::storage.zaw_powrotu, Relay::ZAW_POWR, Relay::ZAW_POWR_PLUS);

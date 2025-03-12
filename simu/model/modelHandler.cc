@@ -257,6 +257,9 @@ bool input(int index)
         case 1:
             return modelState.IN1;
             break;
+        case 2:
+            return modelState.IN2;
+            break;
         default:
             // TODO: fatal error
             return false;

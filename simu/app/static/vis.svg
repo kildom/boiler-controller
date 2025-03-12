@@ -27,15 +27,15 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="px"
      showgrid="true"
-     inkscape:zoom="0.83466665"
-     inkscape:cx="516.97285"
-     inkscape:cy="318.6901"
+     inkscape:zoom="1.1803969"
+     inkscape:cx="311.75955"
+     inkscape:cy="427.8222"
      inkscape:window-width="1920"
      inkscape:window-height="1131"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="g7967-5"
      inkscape:connector-spacing="7"
      showguides="false">
     <inkscape:grid
@@ -883,17 +883,17 @@
        y="183.41055" />
     <g
        id="g7967-5"
-       transform="translate(-160,430)">
+       transform="translate(31.461025,249.55222)">
       <text
          xml:space="preserve"
          style="font-size:20px;font-variation-settings:normal;fill:#b30000;fill-opacity:1;stroke:none;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
-         x="186.60352"
+         x="180.67331"
          y="271.7168"
          id="text8066"><tspan
            sodipodi:role="line"
-           x="186.60352"
+           x="180.67331"
            y="271.7168"
-           id="tspan32">Tzadpiec</tspan></text>
+           id="tspan32">Tzadpel °C</tspan></text>
       <rect
          style="font-variation-settings:normal;fill:none;fill-opacity:1;stroke:#4d4d4d;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
          id="rect13549-8"
@@ -905,7 +905,7 @@
          ry="0" />
       <g
          id="g7627-7"
-         onclick="update('Tzadpiec', -1)">
+         onclick="vis.update('Tzadpel', -1)">
         <rect
            style="font-variation-settings:normal;fill:#7aa1ff;fill-opacity:1;stroke:#4d4d4d;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
            id="rect13549-5-1"
@@ -929,7 +929,7 @@
       </g>
       <g
          id="g7632-7"
-         onclick="update('Tzadpiec', +1)">
+         onclick="vis.update('Tzadpel', +1)">
         <rect
            style="font-variation-settings:normal;fill:#ff7252;fill-opacity:1;stroke:#4d4d4d;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
            id="rect13549-5-4-2"
@@ -1295,5 +1295,33 @@
        height="6.4396968"
        x="0"
        y="0" />
+    <g
+       id="IN2:hide">
+      <rect
+         style="fill:#bbbbbb;stroke:#000000;stroke-width:2.20001;stroke-linecap:round;fill-opacity:1"
+         id="aaa"
+         width="33.845844"
+         height="33.246807"
+         x="179.36438"
+         y="461.10001" />
+      <path
+         sodipodi:type="star"
+         style="font-variation-settings:normal;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:2.61327;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000"
+         id="path7836-7"
+         inkscape:flatsided="true"
+         sodipodi:sides="3"
+         sodipodi:cx="370"
+         sodipodi:cy="570"
+         sodipodi:r1="10"
+         sodipodi:r2="5"
+         sodipodi:arg1="3.1415927"
+         sodipodi:arg2="4.1887902"
+         inkscape:rounded="0"
+         inkscape:randomized="0"
+         d="m 360,570 15,-8.66025 0,17.3205 z"
+         inkscape:transform-center-x="-3.3346933"
+         transform="matrix(-1.2338578,0,0,-1.0680971,648.92755,1087.0767)"
+         inkscape:transform-center-y="-4.463939e-05" />
+    </g>
   </g>
 </svg>

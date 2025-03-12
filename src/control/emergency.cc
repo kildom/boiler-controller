@@ -125,3 +125,11 @@ void emergencyUpdate() {
     emergencyDisable.podl[1] = podl2Awaria.get();
 }
 
+/* TODO: Low-level emergency condition detection in timer interrupt:
+
+1. Sensor inputs are updating (ADC is working) - watchdog reset if not
+2. Inputs are within range - disable related outputs for upper levels and inform about that
+3. Main loop is running (not hanging) - watchdog reset if not
+4. Feed watchdog
+
+*/

@@ -1,5 +1,9 @@
 
-CLANG_HOME = ../../ext/wasi-sdk-21.0
+ifeq ($(wildcard ../../ext/wasi-sdk-21.0/bin/clang),)
+	CLANG_HOME = /opt/wasi-sdk
+else
+	CLANG_HOME = ../../ext/wasi-sdk-21.0
+endif
 
 TARGET = ../../dist_simu/model.wasm
 BUILD_TYPE := debug

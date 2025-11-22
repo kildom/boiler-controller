@@ -41,7 +41,6 @@ async function build(opts: BuildOptions, startServer: boolean, metaFileName: str
     let ctx = await esbuild.context(opts);
     if (startServer && mode === 's') {
         let result = await ctx.serve({
-            host: '127.0.0.1',
             port: 8080,
             servedir: path.join(ROOT, 'dist_simu'),
         });
